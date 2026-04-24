@@ -1,10 +1,15 @@
 name: Monthly Google Token Health Check
 
 on:
+  workflow_dispatch:
+    inputs:
+      force_fail:
+        description: 'Set true to force a controlled failure test'
+        required: false
+        default: 'false'
   schedule:
     # Runs monthly on the 1st at 00:00 UTC
     - cron: '0 0 1 * *'
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -34,3 +39,8 @@ jobs:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
 
+      - name: Force controlled failure (test mode)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_fail == 'true' }}
+        run: |
+          echo "Controlled failure test requested."
+          exit 1
