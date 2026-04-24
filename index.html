@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Training Sessions Dashboard</title>
+  <title>Adrian Training Dashboard</title>
   <style>
     :root {
       --bg: #f4f1ea;
@@ -51,6 +51,22 @@
       padding: 8px 14px;
       cursor: pointer;
     }
+    .tab-btn.status-tab { position: relative; padding-right: 28px; }
+    .tab-alert {
+      position: absolute;
+      top: 5px;
+      right: 8px;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #98a6b5;
+      box-shadow: 0 0 0 2px #fffaf1;
+      display: block;
+      cursor: pointer;
+    }
+    .tab-alert.ok { background: #1c7a42; }
+    .tab-alert.neutral { background: #c98a2e; }
+    .tab-alert.warn { background: #c8372d; }
     .tab-btn.active { background: #1c2530; color: #fff; border-color: #1c2530; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
@@ -235,6 +251,16 @@
     .camp { background: var(--camp); }
     .hard { background: var(--hard); }
     .clay { background: var(--clay); }
+    .ok { background: #1c7a42; }
+    .warn { background: #9a2f2f; }
+    .muted-pill { background: #6e7f90; }
+    .monitor-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); }
+    .monitor-card { border: 1px solid #e6dfd2; border-radius: 12px; padding: 10px; background: linear-gradient(150deg, #fffefb 0%, #f8f2e8 100%); }
+    .monitor-title { margin: 0 0 4px; font-size: .88rem; font-weight: 700; }
+    .monitor-meta { margin: 0; font-size: .8rem; color: #5d6d7d; }
+    .monitor-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .monitor-btn { border: 1px solid #d0c6b5; border-radius: 999px; background: #fffaf1; padding: 6px 10px; font: inherit; font-size: .8rem; cursor: pointer; }
+    .monitor-btn:disabled { opacity: .6; cursor: wait; }
     .foot { margin-top: 8px; color: var(--muted); font-size: .82rem; }
     @media (max-width: 700px) { th:nth-child(5), td:nth-child(5) { display: none; } }
   </style>
@@ -242,7 +268,7 @@
 <body>
   <main class="wrap">
     <section class="hero">
-      <h1 id="heroTitle">Training Sessions Dashboard</h1>
+      <h1 id="heroTitle">Adrian Sessions Dashboard</h1>
       <p>Range: Jan 1, 2026 to Apr 22, 2026.</p>
       <div class="freshness" id="freshnessBadge"></div>
     </section>
@@ -250,6 +276,10 @@
     <nav class="tab-nav" aria-label="Dashboard tabs">
       <button class="tab-btn active" data-tab="dashboard" type="button">Dashboard</button>
       <button class="tab-btn" data-tab="recommendations" type="button">Recommendations</button>
+      <button class="tab-btn status-tab" data-tab="monitoring" type="button">
+        App Status
+        <span class="tab-alert" id="appStatusAlert" aria-label="App status pending" title="App status pending"></span>
+      </button>
     </nav>
 
     <section class="tab-panel active" id="tab-dashboard">
@@ -471,84 +501,110 @@
         <p class="foot" id="forecastNote"></p>
       </section>
     </section>
+
+    <section class="tab-panel" id="tab-monitoring">
+      <section class="section">
+        <div class="monitor-actions">
+        <h2>App Status</h2>
+          <button class="monitor-btn" id="refreshMonitoring" type="button">Refresh</button>
+        </div>
+        <p class="foot" id="monitoringNote">Loading latest workflow runs...</p>
+        <div class="monitor-grid" id="monitoringCards"></div>
+      </section>
+      <section class="section">
+        <h2>Latest Runs</h2>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Workflow</th>
+              <th>Status</th>
+              <th>Event</th>
+              <th>Updated</th>
+              <th>Run</th>
+            </tr>
+          </thead>
+          <tbody id="monitoringRows"></tbody>
+        </table>
+      </section>
+    </section>
   </main>
 
   <script>
     const sessions = [
-      { start: '2026-01-02T17:00:00+11:00', end: '2026-01-02T18:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-01-03T09:00:00+11:00', end: '2026-01-03T10:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-01-05T19:00:00+11:00', end: '2026-01-05T20:30:00+11:00', rawType: 'dad', title: 'Dad coaching session (clay)' },
-      { start: '2026-01-07T07:00:00+11:00', end: '2026-01-07T08:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-01-07T19:00:00+11:00', end: '2026-01-07T20:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-01-10T18:00:00+11:00', end: '2026-01-10T19:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-01-12T09:30:00+11:00', end: '2026-01-12T15:30:00+11:00', rawType: 'camp', title: 'Camp session' },
-      { start: '2026-01-13T09:00:00+11:00', end: '2026-01-13T12:00:00+11:00', rawType: 'camp', title: 'Camp session' },
-      { start: '2026-01-14T09:30:00+11:00', end: '2026-01-14T12:30:00+11:00', rawType: 'camp', title: 'Camp session' },
-      { start: '2026-01-15T09:00:00+11:00', end: '2026-01-15T12:00:00+11:00', rawType: 'camp', title: 'Camp session' },
-      { start: '2026-01-24T08:30:00+11:00', end: '2026-01-24T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-01-24T18:30:00+11:00', end: '2026-01-24T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-01-25T18:00:00+11:00', end: '2026-01-25T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-01-31T18:30:00+11:00', end: '2026-01-31T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-02-06T17:00:00+11:00', end: '2026-02-06T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-02-07T08:30:00+11:00', end: '2026-02-07T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-02-08T18:00:00+11:00', end: '2026-02-08T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-02-09T17:00:00+11:00', end: '2026-02-09T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-02-13T17:00:00+11:00', end: '2026-02-13T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-02-14T08:30:00+11:00', end: '2026-02-14T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-02-15T19:00:00+11:00', end: '2026-02-15T20:00:00+11:00', rawType: 'private', title: 'Private training session (clay)' },
-      { start: '2026-02-16T17:00:00+11:00', end: '2026-02-16T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-02-18T19:00:00+11:00', end: '2026-02-18T20:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-02-20T17:00:00+11:00', end: '2026-02-20T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-02-21T08:30:00+11:00', end: '2026-02-21T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-02-21T18:30:00+11:00', end: '2026-02-21T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-02-22T18:00:00+11:00', end: '2026-02-22T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-02-23T17:00:00+11:00', end: '2026-02-23T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-02-25T18:00:00+11:00', end: '2026-02-25T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-02-26T06:30:00+11:00', end: '2026-02-26T07:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-02-27T17:00:00+11:00', end: '2026-02-27T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-02-28T08:30:00+11:00', end: '2026-02-28T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-02-28T18:30:00+11:00', end: '2026-02-28T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-02T17:00:00+11:00', end: '2026-03-02T18:30:00+11:00', rawType: 'squad', title: 'Squad training session (cancelled)', cancelled: true },
-      { start: '2026-03-04T15:30:00+11:00', end: '2026-03-04T17:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-04T18:00:00+11:00', end: '2026-03-04T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-03-05T06:30:00+11:00', end: '2026-03-05T07:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-06T17:00:00+11:00', end: '2026-03-06T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-03-07T08:30:00+11:00', end: '2026-03-07T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-03-07T18:30:00+11:00', end: '2026-03-07T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-08T18:00:00+11:00', end: '2026-03-08T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-09T17:00:00+11:00', end: '2026-03-09T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-03-11T18:00:00+11:00', end: '2026-03-11T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-03-13T17:00:00+11:00', end: '2026-03-13T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-03-14T08:30:00+11:00', end: '2026-03-14T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-03-14T18:30:00+11:00', end: '2026-03-14T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-15T18:00:00+11:00', end: '2026-03-15T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-16T17:00:00+11:00', end: '2026-03-16T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-03-18T18:00:00+11:00', end: '2026-03-18T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-03-20T17:00:00+11:00', end: '2026-03-20T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-03-21T08:30:00+11:00', end: '2026-03-21T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-03-21T18:30:00+11:00', end: '2026-03-21T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-22T18:00:00+11:00', end: '2026-03-22T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-23T17:00:00+11:00', end: '2026-03-23T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-03-25T18:00:00+11:00', end: '2026-03-25T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-03-27T17:00:00+11:00', end: '2026-03-27T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-03-28T08:30:00+11:00', end: '2026-03-28T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-03-28T18:30:00+11:00', end: '2026-03-28T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-29T18:00:00+11:00', end: '2026-03-29T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-03-30T17:00:00+11:00', end: '2026-03-30T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-04-01T18:00:00+11:00', end: '2026-04-01T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-04-04T08:30:00+11:00', end: '2026-04-04T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
-      { start: '2026-04-04T18:30:00+11:00', end: '2026-04-04T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-04-06T18:00:00+10:00', end: '2026-04-06T19:30:00+10:00', rawType: 'dad', title: 'Dad coaching session (clay)' },
-      { start: '2026-04-08T18:00:00+10:00', end: '2026-04-08T19:00:00+10:00', rawType: 'private', title: 'Private training session' },
-      { start: '2026-04-12T12:00:00+10:00', end: '2026-04-12T13:30:00+10:00', rawType: 'dad', title: 'Dad coaching session (clay)' },
-      { start: '2026-04-13T09:30:00+10:00', end: '2026-04-13T12:30:00+10:00', rawType: 'camp', title: 'Camp session' },
-      { start: '2026-04-14T09:00:00+10:00', end: '2026-04-14T12:00:00+10:00', rawType: 'camp', title: 'Camp session (clay)' },
-      { start: '2026-04-16T09:00:00+10:00', end: '2026-04-16T12:00:00+10:00', rawType: 'camp', title: 'Camp session (clay)' },
-      { start: '2026-04-17T09:00:00+10:00', end: '2026-04-17T12:00:00+10:00', rawType: 'camp', title: 'Camp session (clay)' },
-      { start: '2026-04-18T18:30:00+10:00', end: '2026-04-18T20:00:00+10:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-04-20T17:00:00+10:00', end: '2026-04-20T18:30:00+10:00', rawType: 'squad', title: 'Squad training session' },
-      { start: '2026-04-23T15:30:00+10:00', end: '2026-04-23T16:30:00+10:00', rawType: 'dad', title: 'Dad coaching session' },
-      { start: '2026-04-24T17:00:00+10:00', end: '2026-04-24T18:30:00+10:00', rawType: 'squad', title: 'Squad training session' }
+      { start: '2026-01-02T17:00:00+11:00', end: '2026-01-02T18:30:00+11:00', rawType: 'dad', title: 'Adrian/Marcus - dad training - hard' },
+      { start: '2026-01-03T09:00:00+11:00', end: '2026-01-03T10:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-01-05T19:00:00+11:00', end: '2026-01-05T20:30:00+11:00', rawType: 'dad', title: 'Adrian - tennis training - dad (clay)' },
+      { start: '2026-01-07T07:00:00+11:00', end: '2026-01-07T08:30:00+11:00', rawType: 'dad', title: 'Adrian - tennis training - dad (hard court)' },
+      { start: '2026-01-07T19:00:00+11:00', end: '2026-01-07T20:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-01-10T18:00:00+11:00', end: '2026-01-10T19:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court - dad training' },
+      { start: '2026-01-12T09:30:00+11:00', end: '2026-01-12T15:30:00+11:00', rawType: 'camp', title: 'Adrian - Tennis Camp - Malvern East - Futures Tennis Camp  (Yellow Ball)' },
+      { start: '2026-01-13T09:00:00+11:00', end: '2026-01-13T12:00:00+11:00', rawType: 'camp', title: 'Adrian/Marcus - Tennis Slamin (Green/Orange) - Doncaster' },
+      { start: '2026-01-14T09:30:00+11:00', end: '2026-01-14T12:30:00+11:00', rawType: 'camp', title: 'Adrian - Tennis Holiday Camp - Greythorn Park Tennis Club (Yellow ball)' },
+      { start: '2026-01-15T09:00:00+11:00', end: '2026-01-15T12:00:00+11:00', rawType: 'camp', title: 'Adrian/Marcus - Tennis Slamin (Green/Orange) - Doncaster' },
+      { start: '2026-01-24T08:30:00+11:00', end: '2026-01-24T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-01-24T18:30:00+11:00', end: '2026-01-24T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-01-25T18:00:00+11:00', end: '2026-01-25T19:30:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-01-31T18:30:00+11:00', end: '2026-01-31T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - dad - Hard court - FCT Brazil' },
+      { start: '2026-02-06T17:00:00+11:00', end: '2026-02-06T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training' },
+      { start: '2026-02-07T08:30:00+11:00', end: '2026-02-07T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-02-08T18:00:00+11:00', end: '2026-02-08T19:30:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court - dad training' },
+      { start: '2026-02-09T17:00:00+11:00', end: '2026-02-09T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-02-13T17:00:00+11:00', end: '2026-02-13T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training - Hard' },
+      { start: '2026-02-14T08:30:00+11:00', end: '2026-02-14T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-02-15T19:00:00+11:00', end: '2026-02-15T20:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private) - Clay' },
+      { start: '2026-02-16T17:00:00+11:00', end: '2026-02-16T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-02-18T19:00:00+11:00', end: '2026-02-18T20:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-02-20T17:00:00+11:00', end: '2026-02-20T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training' },
+      { start: '2026-02-21T08:30:00+11:00', end: '2026-02-21T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-02-21T18:30:00+11:00', end: '2026-02-21T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-02-22T18:00:00+11:00', end: '2026-02-22T19:30:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-02-23T17:00:00+11:00', end: '2026-02-23T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-02-25T18:00:00+11:00', end: '2026-02-25T19:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-02-26T06:30:00+11:00', end: '2026-02-26T07:30:00+11:00', rawType: 'dad', title: 'Adrian - tennis training with dad - hard' },
+      { start: '2026-02-27T17:00:00+11:00', end: '2026-02-27T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training' },
+      { start: '2026-02-28T08:30:00+11:00', end: '2026-02-28T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-02-28T18:30:00+11:00', end: '2026-02-28T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-02T17:00:00+11:00', end: '2026-03-02T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell - cancelled (rain)', cancelled: true },
+      { start: '2026-03-04T15:30:00+11:00', end: '2026-03-04T17:30:00+11:00', rawType: 'dad', title: 'Marcus and Adrian first aid training at school' },
+      { start: '2026-03-04T18:00:00+11:00', end: '2026-03-04T19:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-03-05T06:30:00+11:00', end: '2026-03-05T07:30:00+11:00', rawType: 'dad', title: 'Adrian tranning - Hardcourt - dad' },
+      { start: '2026-03-06T17:00:00+11:00', end: '2026-03-06T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training' },
+      { start: '2026-03-07T08:30:00+11:00', end: '2026-03-07T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-03-07T18:30:00+11:00', end: '2026-03-07T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-08T18:00:00+11:00', end: '2026-03-08T19:30:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-09T17:00:00+11:00', end: '2026-03-09T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-03-11T18:00:00+11:00', end: '2026-03-11T19:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-03-13T17:00:00+11:00', end: '2026-03-13T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training' },
+      { start: '2026-03-14T08:30:00+11:00', end: '2026-03-14T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-03-14T18:30:00+11:00', end: '2026-03-14T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-15T18:00:00+11:00', end: '2026-03-15T19:30:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-16T17:00:00+11:00', end: '2026-03-16T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-03-18T18:00:00+11:00', end: '2026-03-18T19:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-03-20T17:00:00+11:00', end: '2026-03-20T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training' },
+      { start: '2026-03-21T08:30:00+11:00', end: '2026-03-21T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-03-21T18:30:00+11:00', end: '2026-03-21T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-22T18:00:00+11:00', end: '2026-03-22T19:30:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-23T17:00:00+11:00', end: '2026-03-23T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-03-25T18:00:00+11:00', end: '2026-03-25T19:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-03-27T17:00:00+11:00', end: '2026-03-27T18:30:00+11:00', rawType: 'squad', title: 'Adrian/Marcus - squad training' },
+      { start: '2026-03-28T08:30:00+11:00', end: '2026-03-28T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-03-28T18:30:00+11:00', end: '2026-03-28T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-29T18:00:00+11:00', end: '2026-03-29T19:30:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-03-30T17:00:00+11:00', end: '2026-03-30T18:30:00+11:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-04-01T18:00:00+11:00', end: '2026-04-01T19:00:00+11:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-04-04T08:30:00+11:00', end: '2026-04-04T11:00:00+11:00', rawType: 'competition', title: 'Adrian - tennis competitions (Doubles & Single)' },
+      { start: '2026-04-04T18:30:00+11:00', end: '2026-04-04T20:00:00+11:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-04-06T18:00:00+10:00', end: '2026-04-06T19:30:00+10:00', rawType: 'dad', title: 'Tennis Adi - clay court - dad' },
+      { start: '2026-04-08T18:00:00+10:00', end: '2026-04-08T19:00:00+10:00', rawType: 'private', title: 'Adrian - Training with Christian (private)' },
+      { start: '2026-04-12T12:00:00+10:00', end: '2026-04-12T13:30:00+10:00', rawType: 'dad', title: ' Tennis Adi - Clay  court - Dad training' },
+      { start: '2026-04-13T09:30:00+10:00', end: '2026-04-13T12:30:00+10:00', rawType: 'camp', title: 'Adrian/ Marcus - Tennis Holiday Program - Greytorn Park' },
+      { start: '2026-04-14T09:00:00+10:00', end: '2026-04-14T12:00:00+10:00', rawType: 'camp', title: 'Adrian - Tennis Holiday Program - Heathmonth TC (clay)' },
+      { start: '2026-04-16T09:00:00+10:00', end: '2026-04-16T12:00:00+10:00', rawType: 'camp', title: 'Adrian/Marcus - Tennis Holiday Program - Heathmonth TC (clay)' },
+      { start: '2026-04-17T09:00:00+10:00', end: '2026-04-17T12:00:00+10:00', rawType: 'camp', title: 'Adrian/Marcus - Tennis Holiday Program - Heathmonth TC (clay)' },
+      { start: '2026-04-18T18:30:00+10:00', end: '2026-04-18T20:00:00+10:00', rawType: 'dad', title: 'Tennis Adi - Hard court' },
+      { start: '2026-04-20T17:00:00+10:00', end: '2026-04-20T18:30:00+10:00', rawType: 'squad', title: 'Tennis Squad training Adrian - Russell' },
+      { start: '2026-04-23T15:30:00+10:00', end: '2026-04-23T16:30:00+10:00', rawType: 'dad', title: ' Tennis Adi - Hard court - dad training' },
+      { start: '2026-04-24T17:00:00+10:00', end: '2026-04-24T18:30:00+10:00', rawType: 'squad', title: 'Adrian - squad training' }
     ];
 
     const typeMeta = {
@@ -586,7 +642,23 @@
       return { ...s, startObj: start, endObj: end, hours, surface, dateKey };
     });
     const isPublicDeploy = /(^|\.)github\.io$/i.test(window.location.hostname);
-    const sensitiveObfuscationMap = [];
+    const sensitiveObfuscationMap = [
+      ['Adrian', 'Player A'],
+      ['Adi', 'Player A'],
+      ['Marcus', 'Player B'],
+      ['Christian', 'Coach C'],
+      ['Russell', 'Coach D'],
+      ['Bobby', 'Player C'],
+      ['Will', 'Player D'],
+      ['Meme', 'Player E'],
+      ['Bulleen Tennis Club', 'Club X'],
+      ['Greythorn Park Tennis Club', 'Club Y'],
+      ['Greytorn Park', 'Club Y'],
+      ['Heathmonth TC', 'Club Z'],
+      ['Doncaster', 'Club D'],
+      ['Malvern East', 'Club M'],
+      ['Box Hill', 'Club B']
+    ];
 
     function escapeRegExp(str) {
       return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1386,6 +1458,120 @@
       `;
     }
 
+    const monitoringRepo = { owner: 'tennis-training', repo: 'tennis-training' };
+    const simulateStatusFailure = new URLSearchParams(window.location.search).get('simulateStatusFailure') === '1';
+    const monitoredWorkflows = [
+      { id: 'daily-dashboard-sync.yml', label: 'Daily Dashboard Sync' },
+      { id: 'monthly-google-token-health.yml', label: 'Monthly Token Health' },
+      { id: 'alert-on-failure.yml', label: 'Failure Alerting' }
+    ];
+
+    function monitoringStatusLabel(run) {
+      if (!run) return { text: 'unknown', cls: 'muted-pill' };
+      if (run.status !== 'completed') return { text: run.status, cls: 'muted-pill' };
+      if (run.conclusion === 'success' || run.conclusion === 'skipped') return { text: run.conclusion, cls: 'ok' };
+      if (run.conclusion) return { text: run.conclusion, cls: 'warn' };
+      return { text: 'unknown', cls: 'muted-pill' };
+    }
+
+    async function fetchLatestRun(workflowFile) {
+      const u = `https://api.github.com/repos/${monitoringRepo.owner}/${monitoringRepo.repo}/actions/workflows/${workflowFile}/runs?per_page=1`;
+      const res = await fetch(u, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`GitHub API ${res.status}: ${body.slice(0, 160)}`);
+      }
+      const data = await res.json();
+      return (data.workflow_runs && data.workflow_runs[0]) ? data.workflow_runs[0] : null;
+    }
+
+    async function renderMonitoring() {
+      const noteEl = document.getElementById('monitoringNote');
+      const cardsEl = document.getElementById('monitoringCards');
+      const rowsEl = document.getElementById('monitoringRows');
+      const refreshBtn = document.getElementById('refreshMonitoring');
+      const tabAlert = document.getElementById('appStatusAlert');
+
+      refreshBtn.disabled = true;
+      noteEl.textContent = 'Refreshing workflow run status...';
+
+      try {
+        const runs = await Promise.all(monitoredWorkflows.map(async wf => ({
+          wf,
+          run: await fetchLatestRun(wf.id)
+        })));
+
+        cardsEl.innerHTML = runs.map(({ wf, run }) => {
+          const st = monitoringStatusLabel(run);
+          const updated = run?.updated_at ? formatShortDateTime(new Date(run.updated_at)) : 'n/a';
+          return `
+            <article class="monitor-card">
+              <p class="monitor-title">${wf.label}</p>
+              <p class="monitor-meta">Last update: ${updated}</p>
+              <p style="margin:8px 0 0;"><span class="pill ${st.cls}">${st.text}</span></p>
+            </article>
+          `;
+        }).join('');
+
+        rowsEl.innerHTML = runs.map(({ wf, run }) => {
+          const st = monitoringStatusLabel(run);
+          const evt = run?.event || 'n/a';
+          const updated = run?.updated_at ? formatShortDateTime(new Date(run.updated_at)) : 'n/a';
+          const link = run?.html_url ? `<a href="${run.html_url}" target="_blank" rel="noopener">Open</a>` : 'n/a';
+          return `
+            <tr>
+              <td>${wf.label}</td>
+              <td><span class="pill ${st.cls}">${st.text}</span></td>
+              <td>${evt}</td>
+              <td>${updated}</td>
+              <td>${link}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const hasFailure = runs.some(({ run }) =>
+          run && run.status === 'completed' && run.conclusion && !['success', 'skipped'].includes(run.conclusion)
+        );
+        const hasUnknown = runs.some(({ run }) =>
+          !run || run.status !== 'completed' || !run.conclusion
+        );
+
+        let overall = 'ok';
+        if (simulateStatusFailure || hasFailure) overall = 'warn';
+        else if (hasUnknown) overall = 'neutral';
+
+        tabAlert.classList.remove('ok', 'neutral', 'warn');
+        tabAlert.classList.add(overall);
+        const titleByState = {
+          ok: 'App status: all processes healthy',
+          neutral: 'App status: unknown or in progress',
+          warn: 'App status: failure detected'
+        };
+        tabAlert.title = titleByState[overall];
+        tabAlert.setAttribute('aria-label', tabAlert.title);
+
+        const demoSuffix = simulateStatusFailure ? ' (demo failure mode enabled)' : '';
+        const summaryByState = {
+          ok: 'Overall status: green (all up to date).',
+          neutral: 'Overall status: amber (unknown or in progress).',
+          warn: 'Overall status: red (attention required).'
+        };
+        const summaryText = summaryByState[overall];
+        noteEl.textContent = `Monitoring ${monitoredWorkflows.length} workflows from ${monitoringRepo.owner}/${monitoringRepo.repo}. ${summaryText}${demoSuffix}`;
+      } catch (err) {
+        cardsEl.innerHTML = '';
+        rowsEl.innerHTML = '<tr><td colspan="5">Unable to load run status. Check network/API rate limits and try refresh.</td></tr>';
+        const demoSuffix = simulateStatusFailure ? ' (demo failure mode enabled)' : '';
+        noteEl.textContent = `Monitoring fetch failed: ${err.message}${demoSuffix}`;
+        tabAlert.classList.remove('ok', 'warn');
+        tabAlert.classList.add('warn');
+        tabAlert.title = 'App status: monitoring check failed';
+        tabAlert.setAttribute('aria-label', tabAlert.title);
+      } finally {
+        refreshBtn.disabled = false;
+      }
+    }
+
     const minDate = allSessions.reduce((min, s) => s.dateKey < min ? s.dateKey : min, allSessions[0].dateKey);
     const maxDate = allSessions.reduce((max, s) => s.dateKey > max ? s.dateKey : max, allSessions[0].dateKey);
 
@@ -1413,8 +1599,17 @@
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
         document.getElementById('tab-dashboard').classList.toggle('active', target === 'dashboard');
         document.getElementById('tab-recommendations').classList.toggle('active', target === 'recommendations');
+        document.getElementById('tab-monitoring').classList.toggle('active', target === 'monitoring');
+        if (target === 'monitoring') renderMonitoring();
       });
     });
+
+    document.getElementById('appStatusAlert').addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelector('.tab-btn[data-tab="monitoring"]').click();
+    });
+
+    document.getElementById('refreshMonitoring').addEventListener('click', renderMonitoring);
 
     document.addEventListener('click', (e) => {
       const infoWrap = e.target.closest('.metric-info');
@@ -1427,6 +1622,7 @@
     });
 
     applyFilters();
+    renderMonitoring();
   </script>
 </body>
 </html>
