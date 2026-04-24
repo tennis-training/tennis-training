@@ -58,6 +58,7 @@ Helper command:
 - It scans committed `HEAD:index.html` (public artifact), not your local working copy.
 - It blocks push when sensitive terms are detected in the committed artifact.
 - Secret-pattern checks are scoped to committed `HEAD:index.html` to avoid false positives from docs/scripts text.
+- It runs a critical-metrics parity test (`tests/metrics-parity.test.mjs`) and blocks push if local/public metrics diverge.
 
 ## Incident Response
 

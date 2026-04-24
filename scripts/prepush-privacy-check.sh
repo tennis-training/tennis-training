@@ -12,6 +12,9 @@ EOF
   exit 2
 fi
 
+echo "Running critical metrics parity test..."
+node --test tests/metrics-parity.test.mjs
+
 echo "Running PII scan against committed HEAD:index.html..."
 tmp_index="$(mktemp)"
 trap 'rm -f "$tmp_index"' EXIT
