@@ -86,7 +86,6 @@ jobs:
             core.setOutput('failed_step', failedStep?.name || 'unknown');
 
       - name: Send SMS via Twilio
-        if: ${{ secrets.TWILIO_ACCOUNT_SID != '' && secrets.TWILIO_AUTH_TOKEN != '' && secrets.TWILIO_FROM_NUMBER != '' && secrets.ALERT_TO_NUMBER != '' }}
         env:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
@@ -98,6 +97,10 @@ jobs:
           FAILED_STAGE: ${{ steps.failure_meta.outputs.failed_stage }}
           FAILED_STEP: ${{ steps.failure_meta.outputs.failed_step }}
         run: |
+          if [[ -z "${TWILIO_ACCOUNT_SID}" || -z "${TWILIO_AUTH_TOKEN}" || -z "${TWILIO_FROM_NUMBER}" || -z "${ALERT_TO_NUMBER}" ]]; then
+            echo "Twilio secrets missing; skipping SMS."
+            exit 0
+          fi
           SMS_BODY="ALERT: DASHBOARD SYNC FAILED | Workflow: ${RUN_NAME} | Run: ${RUN_ID} | Stage: ${FAILED_STAGE} | Step: ${FAILED_STEP} | ${RUN_URL}"
           curl -sS -X POST "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json" \
             --data-urlencode "To=${ALERT_TO_NUMBER}" \
