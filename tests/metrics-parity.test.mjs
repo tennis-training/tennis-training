@@ -1,15 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { execSync } from 'node:child_process';
-
-function readHeadIndexHtml() {
-  try {
-    return execSync('git show HEAD:index.html', { encoding: 'utf8' });
-  } catch {
-    return null;
-  }
-}
 
 function parseDashboardData(html) {
   const sessionsMatch = html.match(/const sessions = \[([\s\S]*?)\n    \];/);
@@ -55,18 +46,17 @@ function summarize(html) {
   };
 }
 
-test('critical metrics parity: local index vs committed HEAD:index', () => {
-  const localHtml = fs.readFileSync('index.html', 'utf8');
-  const headHtml = readHeadIndexHtml();
-
-  if (!headHtml) {
-    // No HEAD file yet (e.g., first commit). Do not fail local workflow.
+test('critical metrics parity: private snapshot vs current publish artifact', (t) => {
+  const privateSnapshotPath = '.local/index.local.private.html';
+  if (!fs.existsSync(privateSnapshotPath)) {
+    t.skip('No private snapshot found at .local/index.local.private.html');
     return;
   }
 
-  const local = summarize(localHtml);
-  const head = summarize(headHtml);
+  const privateHtml = fs.readFileSync(privateSnapshotPath, 'utf8');
+  const currentHtml = fs.readFileSync('index.html', 'utf8');
+  const privateSummary = summarize(privateHtml);
+  const currentSummary = summarize(currentHtml);
 
-  assert.deepEqual(local, head);
+  assert.deepEqual(currentSummary, privateSummary);
 });
-

@@ -27,6 +27,18 @@ Local/private sync (full-detail local use only):
 ./scripts/sync-local-full.sh
 ```
 
+One-command routine (refresh local, build public-safe, validate, commit, push, restore local private view):
+
+```bash
+./scripts/routine-safe-publish.sh
+```
+
+Optional dry run:
+
+```bash
+./scripts/routine-safe-publish.sh --dry-run
+```
+
 ## Pre-Push Checklist
 
 1. Run public-safe sync command if you intend to publish.
