@@ -1,6 +1,7 @@
 name: Alert on Workflow Failure
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows:
       - Daily Tennis Dashboard Sync
