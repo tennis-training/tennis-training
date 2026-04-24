@@ -57,6 +57,7 @@ Helper command:
 - The pre-push hook does not rewrite your local files.
 - It scans committed `HEAD:index.html` (public artifact), not your local working copy.
 - It blocks push when sensitive terms are detected in the committed artifact.
+- Secret-pattern checks are scoped to committed `HEAD:index.html` to avoid false positives from docs/scripts text.
 
 ## Incident Response
 

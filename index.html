@@ -1316,7 +1316,7 @@
 
       const rows = filtered
         .slice()
-        .sort((a, b) => a.startObj - b.startObj)
+        .sort((a, b) => b.startObj - a.startObj)
         .map(s => {
           const date = s.start.slice(0, 10);
           const time = s.start.slice(11, 16);

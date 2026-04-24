@@ -22,7 +22,7 @@ if rg -n -f .pii-watchlist.txt "$tmp_index" -i -S; then
 fi
 
 echo "Running hardcoded secret pattern scan..."
-if rg -n "(GOCSPX-|ya29\\.|refresh_token\\s*[:=]\\s*['\\\"]|client_secret\\s*[:=]\\s*['\\\"])" -S; then
+if rg -n "(GOCSPX-|ya29\\.|refresh_token\\s*[:=]\\s*['\\\"]|client_secret\\s*[:=]\\s*['\\\"])" "$tmp_index" -S; then
   echo "Potential hardcoded secret pattern detected. Do not push."
   exit 1
 fi
