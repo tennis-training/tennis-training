@@ -12,8 +12,11 @@ EOF
   exit 2
 fi
 
-echo "Running PII scan against index.html..."
-if rg -n -f .pii-watchlist.txt index.html -i -S; then
+echo "Running PII scan against committed HEAD:index.html..."
+tmp_index="$(mktemp)"
+trap 'rm -f "$tmp_index"' EXIT
+git show HEAD:index.html > "$tmp_index"
+if rg -n -f .pii-watchlist.txt "$tmp_index" -i -S; then
   echo "PII terms detected. Do not push."
   exit 1
 fi

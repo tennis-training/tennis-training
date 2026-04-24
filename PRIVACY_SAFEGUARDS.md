@@ -55,7 +55,8 @@ Helper command:
 ## Push Behavior
 
 - The pre-push hook does not rewrite your local files.
-- It only runs privacy checks and blocks push when sensitive terms are detected.
+- It scans committed `HEAD:index.html` (public artifact), not your local working copy.
+- It blocks push when sensitive terms are detected in the committed artifact.
 
 ## Incident Response
 
