@@ -1,0 +1,1432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training Sessions Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --card: #fffdf8;
+      --ink: #1c2530;
+      --muted: #566575;
+      --line: #ddd5c8;
+      --private: #ff6b2c;
+      --squad: #1f8a8a;
+      --dad: #3558e6;
+      --competition: #7a2f52;
+      --camp: #9a7a10;
+      --hard: #364152;
+      --clay: #c86a2f;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Avenir Next", "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 14px 40px; }
+    .hero, .section, .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+    .hero { position: relative; padding: 16px; box-shadow: 8px 8px 0 #1c2530; border: 2px solid #1c2530; }
+    .hero h1 { margin: 0 0 6px; font-size: clamp(1.2rem, 2.8vw, 1.9rem); }
+    .hero p { margin: 0; color: var(--muted); }
+    .freshness {
+      margin-top: 8px;
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 8px;
+      border: 1px solid #e0d8ca;
+      border-radius: 999px;
+      background: rgba(255, 253, 248, 0.55);
+      font-size: .72rem;
+      color: #667686;
+      backdrop-filter: blur(1px);
+    }
+    .freshness strong { color: #4d5f70; font-weight: 600; }
+    .tab-nav { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .tab-btn {
+      border: 1px solid #cfc4b1;
+      background: #fffaf1;
+      color: var(--ink);
+      font: inherit;
+      font-size: .9rem;
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .tab-btn.active { background: #1c2530; color: #fff; border-color: #1c2530; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .grid { display: grid; gap: 10px; margin-top: 14px; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); }
+    .card { padding: 12px; }
+    .kicker { margin: 0 0 5px; font-size: .75rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+    .kicker-line { display: inline-flex; align-items: center; gap: 5px; }
+    .metric-info { position: relative; display: inline-flex; align-items: center; }
+    .metric-info-btn {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid #cec4b4;
+      background: transparent;
+      color: #677789;
+      font-size: .6rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0;
+      opacity: .45;
+      cursor: help;
+      transition: opacity .15s ease, background-color .15s ease;
+    }
+    .metric-info-btn:hover,
+    .metric-info-btn:focus-visible {
+      opacity: .95;
+      background: #fff;
+      outline: none;
+    }
+    .metric-tip {
+      position: absolute;
+      top: 18px;
+      right: 0;
+      min-width: 170px;
+      max-width: 240px;
+      padding: 6px 8px;
+      border: 1px solid #d6ccbc;
+      border-radius: 8px;
+      background: rgba(255, 254, 250, 0.98);
+      color: #4f6072;
+      font-size: .7rem;
+      font-weight: 500;
+      line-height: 1.25;
+      text-transform: none;
+      letter-spacing: normal;
+      box-shadow: 0 8px 18px rgba(28, 37, 48, 0.12);
+      opacity: 0;
+      transform: translateY(-2px);
+      pointer-events: none;
+      transition: opacity .12s ease, transform .12s ease;
+      z-index: 20;
+    }
+    .metric-info:hover .metric-tip,
+    .metric-info:focus-within .metric-tip,
+    .metric-info.open .metric-tip {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .big { margin: 0; font-size: 1.6rem; font-weight: 700; }
+    .kpi-sub { margin: 4px 0 0; font-size: .8rem; color: #5f6f80; }
+    .section { margin-top: 14px; padding: 12px; }
+    .section h2 { margin: 0 0 10px; font-size: 1rem; }
+    .filter-panel {
+      border: 1px solid #d9d1c3;
+      border-radius: 14px;
+      background: linear-gradient(150deg, #fffefb 0%, #f8f2e8 100%);
+      box-shadow: 0 6px 16px rgba(28, 37, 48, 0.05);
+      overflow: hidden;
+    }
+    .filter-panel summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .filter-panel summary::-webkit-details-marker { display: none; }
+    .filter-panel summary::after {
+      content: "▾";
+      font-size: .92rem;
+      color: #5f6f80;
+      transition: transform .18s ease;
+    }
+    .filter-panel[open] summary::after { transform: rotate(180deg); }
+    .filter-title { margin: 0; font-size: .95rem; font-weight: 700; }
+    .filter-state { margin: 2px 0 0; font-size: .8rem; color: #5c6c7d; }
+    .filter-content { border-top: 1px solid #e5ddcf; padding: 12px; display: grid; gap: 10px; }
+    .filter-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); }
+    .filter-field { display: grid; gap: 6px; }
+    .filter-label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .filter-input {
+      width: 100%;
+      border: 1px solid #d7cfbf;
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--ink);
+    }
+    .filter-input.compact {
+      padding: 5px 8px;
+      border-radius: 8px;
+      font-size: .82rem;
+    }
+    .check-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+    .check-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid #d7cfbf; border-radius: 999px; background: #fff; font-size: .82rem; }
+    .toggle-line { margin-top: 6px; display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+    .goal-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); }
+    .goal-label-row { display: flex; justify-content: space-between; font-size: .82rem; color: #5d6d7d; }
+    .goal-value { font-weight: 700; color: #243142; }
+    .goal-slider { width: 100%; accent-color: #3558e6; }
+    .bars { display: grid; gap: 10px; }
+    .row { display: grid; gap: 5px; }
+    .head { display: flex; justify-content: space-between; font-size: .92rem; }
+    .track { height: 10px; background: #ebe5da; border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; border-radius: 999px; }
+    .trend-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); }
+    .trend-card {
+      border: 1px solid #e6dfd2;
+      border-radius: 16px;
+      padding: 12px;
+      background: linear-gradient(145deg, #fffefb 0%, #f9f4e9 100%);
+      box-shadow: 0 6px 18px rgba(28, 37, 48, 0.06);
+    }
+    .trend-title { margin: 0 0 4px; font-size: .92rem; font-weight: 700; letter-spacing: .01em; }
+    .trend-sub { margin: 0 0 8px; color: #6a7888; font-size: .78rem; }
+    .trend-svg { width: 100%; height: 170px; display: block; background: linear-gradient(180deg, #ffffff 0%, #f7f2e8 100%); border-radius: 10px; }
+    .heatmap-wrap { display: grid; gap: 8px; overflow-x: auto; }
+    .heatmap-grid { display: grid; grid-template-columns: 76px repeat(6, minmax(70px, 1fr)); gap: 6px; min-width: 560px; }
+    .heatmap-head {
+      font-size: .72rem;
+      color: #5f6f80;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      align-self: end;
+      justify-self: center;
+    }
+    .heatmap-day {
+      font-size: .78rem;
+      color: #4f6072;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 6px;
+    }
+    .heatmap-cell {
+      border: 1px solid #e4dccf;
+      border-radius: 8px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      font-weight: 700;
+      color: #243142;
+      background: #f3ede1;
+    }
+    .heatmap-legend { font-size: .76rem; color: #667686; }
+    .summary-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit,minmax(320px,1fr)); }
+    .summary-card { border: 1px solid #e3dccf; border-radius: 12px; padding: 10px; background: linear-gradient(170deg, #fffefb 0%, #f7f2e8 100%); }
+    .summary-title { margin: 0 0 8px; font-size: .9rem; font-weight: 700; }
+    .summary-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .summary-table th, .summary-table td { padding: 6px 4px; border-bottom: 1px solid #ece4d7; text-align: right; }
+    .summary-table th:first-child, .summary-table td:first-child { text-align: left; }
+    .delta-pos { color: #1c7a42; font-weight: 600; }
+    .delta-neg { color: #9a2f2f; font-weight: 600; }
+    .delta-flat { color: #5c6d7f; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid #eee7da; text-align: left; }
+    th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    tr.cancelled td { color: #7d6d6d; }
+    tr.cancelled td:last-child { text-decoration: line-through; text-decoration-thickness: 1px; }
+    .pill { color: #fff; padding: 3px 8px; border-radius: 999px; font-size: .74rem; font-weight: 600; }
+    .private { background: var(--private); }
+    .squad { background: var(--squad); }
+    .dad { background: var(--dad); }
+    .competition { background: var(--competition); }
+    .camp { background: var(--camp); }
+    .hard { background: var(--hard); }
+    .clay { background: var(--clay); }
+    .foot { margin-top: 8px; color: var(--muted); font-size: .82rem; }
+    @media (max-width: 700px) { th:nth-child(5), td:nth-child(5) { display: none; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1 id="heroTitle">Training Sessions Dashboard</h1>
+      <p>Range: Jan 1, 2026 to Apr 22, 2026.</p>
+      <div class="freshness" id="freshnessBadge"></div>
+    </section>
+
+    <nav class="tab-nav" aria-label="Dashboard tabs">
+      <button class="tab-btn active" data-tab="dashboard" type="button">Dashboard</button>
+      <button class="tab-btn" data-tab="recommendations" type="button">Recommendations</button>
+    </nav>
+
+    <section class="tab-panel active" id="tab-dashboard">
+      <section class="section">
+        <details class="filter-panel">
+          <summary>
+            <div>
+              <p class="filter-title">Filters</p>
+              <p class="filter-state" id="filterState">Loading filter state...</p>
+            </div>
+          </summary>
+          <div class="filter-content">
+            <div class="filter-grid">
+              <label class="filter-field">
+                <span class="filter-label">Date From</span>
+                <input class="filter-input" id="filterStart" type="date" />
+              </label>
+              <label class="filter-field">
+                <span class="filter-label">Date To</span>
+                <input class="filter-input" id="filterEnd" type="date" />
+              </label>
+              <div class="filter-field">
+                <span class="filter-label">Session Type</span>
+                <div class="check-grid" id="typeFilters"></div>
+              </div>
+              <div class="filter-field">
+                <span class="filter-label">Surface</span>
+                <div class="check-grid" id="surfaceFilters"></div>
+              </div>
+            </div>
+            <label class="toggle-line">
+              <input id="filterCancelled" type="checkbox" />
+              Include cancelled
+            </label>
+            <p class="foot" id="filterSummary"></p>
+          </div>
+        </details>
+      </section>
+
+      <section class="grid" id="summary"></section>
+
+      <section class="section">
+        <h2>Hours by Session Type</h2>
+        <div class="bars" id="typeBars"></div>
+      </section>
+
+      <section class="section">
+        <h2>Hours by Surface</h2>
+        <div class="bars" id="surfaceBars"></div>
+      </section>
+
+      <section class="section">
+        <h2>Weekly Trends</h2>
+        <div class="trend-grid">
+          <article class="trend-card">
+            <h3 class="trend-title">Sessions Per Week</h3>
+            <p class="trend-sub">Count of sessions by Monday-start week.</p>
+            <svg id="sessionsTrend" class="trend-svg" viewBox="0 0 480 160" preserveAspectRatio="none"></svg>
+          </article>
+          <article class="trend-card">
+            <h3 class="trend-title">Hours Per Week</h3>
+            <p class="trend-sub">Total session hours by week.</p>
+            <svg id="hoursTrend" class="trend-svg" viewBox="0 0 480 160" preserveAspectRatio="none"></svg>
+          </article>
+          <article class="trend-card">
+            <h3 class="trend-title">Clay Share %</h3>
+            <p class="trend-sub">Percentage of weekly hours played on clay.</p>
+            <svg id="clayTrend" class="trend-svg" viewBox="0 0 480 160" preserveAspectRatio="none"></svg>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Summary Tables</h2>
+        <div class="summary-grid">
+          <article class="summary-card">
+            <h3 class="summary-title">Monthly Summary</h3>
+            <table class="summary-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th>Sessions</th>
+                  <th>Hours</th>
+                  <th>Δ Sessions</th>
+                  <th>Δ Hours</th>
+                </tr>
+              </thead>
+              <tbody id="monthlyRows"></tbody>
+            </table>
+          </article>
+          <article class="summary-card">
+            <h3 class="summary-title">Quarterly Summary</h3>
+            <table class="summary-table">
+              <thead>
+                <tr>
+                  <th>Quarter</th>
+                  <th>Sessions</th>
+                  <th>Hours</th>
+                  <th>Δ Sessions</th>
+                  <th>Δ Hours</th>
+                </tr>
+              </thead>
+              <tbody id="quarterlyRows"></tbody>
+            </table>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Consistency Metrics</h2>
+        <div class="grid" id="consistencyKpis"></div>
+        <p class="foot" id="consistencyNote"></p>
+      </section>
+
+      <section class="section">
+        <h2>Quality KPIs</h2>
+        <div class="grid" id="qualityKpis"></div>
+        <p class="foot" id="qualityKpiNote"></p>
+      </section>
+
+      <section class="section">
+        <h2>Weekday/Time Heatmap</h2>
+        <div class="filter-field" style="max-width: 210px; margin-bottom: 6px;">
+          <span class="filter-label">Heatmap Session Type</span>
+          <select class="filter-input compact" id="heatmapTypeFilter">
+            <option value="all">All session types</option>
+            <option value="private">Private training</option>
+            <option value="squad">Squad training</option>
+            <option value="dad">Dad coaching</option>
+            <option value="competition">Competition</option>
+            <option value="camp">Camp</option>
+          </select>
+        </div>
+        <p class="trend-sub" id="heatmapWindowNote">Session density by weekday and hour blocks of the day.</p>
+        <div class="heatmap-wrap">
+          <div class="heatmap-grid" id="weekdayHeatmap"></div>
+          <p class="heatmap-legend">Darker cells indicate higher session count in that time window.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <details class="filter-panel">
+          <summary>
+            <div>
+              <p class="filter-title">All Sessions</p>
+              <p class="filter-state">Expand to view session-level details.</p>
+            </div>
+          </summary>
+          <div class="filter-content">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Start</th>
+                  <th>Hours</th>
+                  <th>Type</th>
+                  <th>Surface</th>
+                  <th>Session</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+            <p class="foot">Notes: Individual and dad sessions are merged as Dad Coaching. Surface defaults to hard unless clay is stated. Clay override applied on dates with Court 3/4 bookings.</p>
+          </div>
+        </details>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="tab-recommendations">
+      <section class="section">
+        <h2>Goal Sliders</h2>
+        <div class="goal-grid">
+          <div class="filter-field">
+            <div class="goal-label-row">
+              <span>Weekly Sessions Target</span>
+              <span class="goal-value" id="goalSessionsVal">5</span>
+            </div>
+            <input id="goalSessions" class="goal-slider" type="range" min="3" max="10" step="1" value="5" />
+          </div>
+          <div class="filter-field">
+            <div class="goal-label-row">
+              <span>Clay Share Target</span>
+              <span class="goal-value" id="goalClayVal">30%</span>
+            </div>
+            <input id="goalClay" class="goal-slider" type="range" min="10" max="60" step="1" value="30" />
+          </div>
+          <div class="filter-field">
+            <div class="goal-label-row">
+              <span>Hit-Rate Target</span>
+              <span class="goal-value" id="goalHitRateVal">80%</span>
+            </div>
+            <input id="goalHitRate" class="goal-slider" type="range" min="50" max="100" step="5" value="80" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Forecasted Sessions</h2>
+        <div class="grid" id="forecastCards"></div>
+      </section>
+      <section class="section">
+        <h2>Quantitative Recommendations</h2>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Current</th>
+              <th>Target</th>
+              <th>4-Week Forecast</th>
+              <th>Gap</th>
+            </tr>
+          </thead>
+          <tbody id="forecastRows"></tbody>
+        </table>
+      </section>
+      <section class="section">
+        <h2>Qualitative Recommendations</h2>
+        <div class="bars" id="qualitativeList"></div>
+        <p class="foot" id="forecastNote"></p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const sessions = [
+      { start: '2026-01-02T17:00:00+11:00', end: '2026-01-02T18:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-01-03T09:00:00+11:00', end: '2026-01-03T10:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-01-05T19:00:00+11:00', end: '2026-01-05T20:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-01-07T07:00:00+11:00', end: '2026-01-07T08:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-01-07T19:00:00+11:00', end: '2026-01-07T20:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-01-10T18:00:00+11:00', end: '2026-01-10T19:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-01-12T09:30:00+11:00', end: '2026-01-12T15:30:00+11:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-01-13T09:00:00+11:00', end: '2026-01-13T12:00:00+11:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-01-14T09:30:00+11:00', end: '2026-01-14T12:30:00+11:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-01-15T09:00:00+11:00', end: '2026-01-15T12:00:00+11:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-01-24T08:30:00+11:00', end: '2026-01-24T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-01-24T18:30:00+11:00', end: '2026-01-24T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-01-25T18:00:00+11:00', end: '2026-01-25T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-01-31T18:30:00+11:00', end: '2026-01-31T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-02-06T17:00:00+11:00', end: '2026-02-06T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-02-07T08:30:00+11:00', end: '2026-02-07T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-02-08T18:00:00+11:00', end: '2026-02-08T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-02-09T17:00:00+11:00', end: '2026-02-09T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-02-13T17:00:00+11:00', end: '2026-02-13T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-02-14T08:30:00+11:00', end: '2026-02-14T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-02-15T19:00:00+11:00', end: '2026-02-15T20:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-02-16T17:00:00+11:00', end: '2026-02-16T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-02-18T19:00:00+11:00', end: '2026-02-18T20:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-02-20T17:00:00+11:00', end: '2026-02-20T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-02-21T08:30:00+11:00', end: '2026-02-21T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-02-21T18:30:00+11:00', end: '2026-02-21T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-02-22T18:00:00+11:00', end: '2026-02-22T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-02-23T17:00:00+11:00', end: '2026-02-23T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-02-25T18:00:00+11:00', end: '2026-02-25T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-02-26T06:30:00+11:00', end: '2026-02-26T07:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-02-27T17:00:00+11:00', end: '2026-02-27T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-02-28T08:30:00+11:00', end: '2026-02-28T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-02-28T18:30:00+11:00', end: '2026-02-28T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-02T17:00:00+11:00', end: '2026-03-02T18:30:00+11:00', rawType: 'squad', title: 'Squad training session (cancelled)', cancelled: true },
+      { start: '2026-03-04T15:30:00+11:00', end: '2026-03-04T17:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-04T18:00:00+11:00', end: '2026-03-04T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-03-05T06:30:00+11:00', end: '2026-03-05T07:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-06T17:00:00+11:00', end: '2026-03-06T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-03-07T08:30:00+11:00', end: '2026-03-07T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-03-07T18:30:00+11:00', end: '2026-03-07T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-08T18:00:00+11:00', end: '2026-03-08T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-09T17:00:00+11:00', end: '2026-03-09T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-03-11T18:00:00+11:00', end: '2026-03-11T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-03-13T17:00:00+11:00', end: '2026-03-13T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-03-14T08:30:00+11:00', end: '2026-03-14T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-03-14T18:30:00+11:00', end: '2026-03-14T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-15T18:00:00+11:00', end: '2026-03-15T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-16T17:00:00+11:00', end: '2026-03-16T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-03-18T18:00:00+11:00', end: '2026-03-18T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-03-20T17:00:00+11:00', end: '2026-03-20T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-03-21T08:30:00+11:00', end: '2026-03-21T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-03-21T18:30:00+11:00', end: '2026-03-21T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-22T18:00:00+11:00', end: '2026-03-22T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-23T17:00:00+11:00', end: '2026-03-23T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-03-25T18:00:00+11:00', end: '2026-03-25T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-03-27T17:00:00+11:00', end: '2026-03-27T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-03-28T08:30:00+11:00', end: '2026-03-28T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-03-28T18:30:00+11:00', end: '2026-03-28T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-29T18:00:00+11:00', end: '2026-03-29T19:30:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-03-30T17:00:00+11:00', end: '2026-03-30T18:30:00+11:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-04-01T18:00:00+11:00', end: '2026-04-01T19:00:00+11:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-04-04T08:30:00+11:00', end: '2026-04-04T11:00:00+11:00', rawType: 'competition', title: 'Competition session' },
+      { start: '2026-04-04T18:30:00+11:00', end: '2026-04-04T20:00:00+11:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-04-06T18:00:00+10:00', end: '2026-04-06T19:30:00+10:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-04-08T18:00:00+10:00', end: '2026-04-08T19:00:00+10:00', rawType: 'private', title: 'Private training session' },
+      { start: '2026-04-12T12:00:00+10:00', end: '2026-04-12T13:30:00+10:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-04-13T09:30:00+10:00', end: '2026-04-13T12:30:00+10:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-04-14T09:00:00+10:00', end: '2026-04-14T12:00:00+10:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-04-16T09:00:00+10:00', end: '2026-04-16T12:00:00+10:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-04-17T09:00:00+10:00', end: '2026-04-17T12:00:00+10:00', rawType: 'camp', title: 'Camp session' },
+      { start: '2026-04-18T18:30:00+10:00', end: '2026-04-18T20:00:00+10:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-04-20T17:00:00+10:00', end: '2026-04-20T18:30:00+10:00', rawType: 'squad', title: 'Squad training session' },
+      { start: '2026-04-23T15:30:00+10:00', end: '2026-04-23T16:30:00+10:00', rawType: 'dad', title: 'Dad coaching session' },
+      { start: '2026-04-24T17:00:00+10:00', end: '2026-04-24T18:30:00+10:00', rawType: 'squad', title: 'Squad training session' }
+    ];
+
+    const typeMeta = {
+      private: { label: 'Private Training', color: 'var(--private)' },
+      squad: { label: 'Squad Training', color: 'var(--squad)' },
+      dad: { label: 'Dad Coaching', color: 'var(--dad)' },
+      competition: { label: 'Competition', color: 'var(--competition)' },
+      camp: { label: 'Camp', color: 'var(--camp)' }
+    };
+
+    const surfaceMeta = {
+      hard: { label: 'Hard', color: 'var(--hard)' },
+      clay: { label: 'Clay', color: 'var(--clay)' }
+    };
+
+    const courtBookingClayDates = new Set([
+      '2026-02-28',
+      '2026-03-01',
+      '2026-03-08',
+      '2026-03-09',
+      '2026-03-14',
+      '2026-03-15',
+      '2026-03-28',
+      '2026-03-29',
+      '2026-04-06'
+    ]);
+
+    const allSessions = sessions.map(s => {
+      const start = new Date(s.start);
+      const end = new Date(s.end);
+      const hours = (end - start) / 36e5;
+      const t = s.title.toLowerCase();
+      const dateKey = s.start.slice(0, 10);
+      const surface = (t.includes('clay') || courtBookingClayDates.has(dateKey)) ? 'clay' : 'hard';
+      return { ...s, startObj: start, endObj: end, hours, surface, dateKey };
+    });
+    const isPublicDeploy = /(^|\.)github\.io$/i.test(window.location.hostname);
+    const sensitiveObfuscationMap = [];
+
+    function escapeRegExp(str) {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function obfuscateSensitive(text) {
+      if (!isPublicDeploy || !text) return text;
+      let out = text;
+      sensitiveObfuscationMap.forEach(([from, to]) => {
+        out = out.replace(new RegExp(`\\b${escapeRegExp(from)}\\b`, 'gi'), to);
+      });
+      return out;
+    }
+
+    function applyPublicPrivacyLayer() {
+      if (!isPublicDeploy) return;
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode(node) {
+            const parentTag = node.parentElement && node.parentElement.tagName;
+            if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+            if (parentTag === 'SCRIPT' || parentTag === 'STYLE') return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        }
+      );
+
+      const textNodes = [];
+      let n;
+      while ((n = walker.nextNode())) textNodes.push(n);
+      textNodes.forEach(node => {
+        node.nodeValue = obfuscateSensitive(node.nodeValue);
+      });
+    }
+
+    if (isPublicDeploy) {
+      const heroTitle = document.getElementById('heroTitle');
+      if (heroTitle) heroTitle.textContent = 'Player Sessions Dashboard';
+    }
+
+    const asOf = new Date();
+    const year = asOf.getFullYear();
+    const yearStart = new Date(year, 0, 1);
+    const dayOfYear = Math.floor((asOf - yearStart) / 86400000) + 1;
+    const appLoadTime = new Date();
+
+    function formatShortDateTime(d) {
+      return d.toLocaleString('en-AU', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
+
+    function nextDailySyncTime(hour, minute) {
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(hour, minute, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1);
+      return next;
+    }
+
+    function seedKeys(meta) {
+      return Object.keys(meta).reduce((acc, key) => ({ ...acc, [key]: 0 }), {});
+    }
+
+    function renderBars(targetId, hoursByKey, countsByKey, meta) {
+      const entries = Object.keys(hoursByKey).map(k => [k, hoursByKey[k], countsByKey[k]]);
+      entries.sort((a, b) => b[1] - a[1]);
+      const max = Math.max(...entries.map(([, h]) => h), 0);
+      document.getElementById(targetId).innerHTML = entries.map(([k, h, c]) => `
+        <div class="row">
+          <div class="head"><span>${meta[k].label}</span><strong>${c} sessions • ${h.toFixed(1)} h</strong></div>
+          <div class="track"><div class="fill" style="width:${max ? ((h / max) * 100) : 0}%; background:${meta[k].color};"></div></div>
+        </div>
+      `).join('');
+    }
+
+    function startOfWeekMonday(d) {
+      const dt = new Date(d);
+      const day = (dt.getDay() + 6) % 7;
+      dt.setHours(0, 0, 0, 0);
+      dt.setDate(dt.getDate() - day);
+      return dt;
+    }
+
+    function toDateKey(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function drawLineChart(svgId, values, labels, color, opts = {}) {
+      const svg = document.getElementById(svgId);
+      if (!values.length) {
+        svg.innerHTML = `
+          <text x="240" y="82" text-anchor="middle" font-size="12" fill="#718194">
+            No data for selected filters
+          </text>
+        `;
+        return;
+      }
+      const w = 480;
+      const h = 160;
+      const p = { l: 54, r: 12, t: 12, b: 36 };
+      const iw = w - p.l - p.r;
+      const ih = h - p.t - p.b;
+      const maxV = opts.maxOverride == null ? Math.max(...values, 1) : opts.maxOverride;
+      const yLabel = opts.yLabel || 'Value';
+      const xLabel = opts.xLabel || 'Week';
+      const formatValue = opts.formatValue || ((v) => String(v));
+
+      const points = values.map((v, i) => {
+        const x = p.l + (values.length === 1 ? iw / 2 : (i / (values.length - 1)) * iw);
+        const y = p.t + (1 - (v / maxV)) * ih;
+        return { x, y, v };
+      });
+
+      const d = points.map((pt, i) => `${i ? 'L' : 'M'} ${pt.x.toFixed(2)} ${pt.y.toFixed(2)}`).join(' ');
+      const tickFractions = [0, 0.25, 0.5, 0.75, 1];
+      const grid = tickFractions.map(f => {
+        const y = p.t + ih * f;
+        return `<line x1="${p.l}" y1="${y}" x2="${w - p.r}" y2="${y}" stroke="#ece4d7" stroke-width="1"/>` +
+          `<text x="${p.l - 8}" y="${y + 3}" text-anchor="end" font-size="9" fill="#7b8797">${formatValue((1 - f) * maxV)}</text>`;
+      }).join('');
+
+      const dots = points.map(pt => `<circle cx="${pt.x}" cy="${pt.y}" r="2.8" fill="${color}"><title>${pt.v}</title></circle>`).join('');
+      const endLabels = points.filter((_, i) => i === 0 || i === points.length - 1).map((pt, i) => {
+        const key = i === 0 ? labels[0] : labels[labels.length - 1];
+        const anchor = i === 0 ? 'start' : 'end';
+        const x = i === 0 ? (p.l + 2) : (w - p.r - 2);
+        return `<text x="${x}" y="${h - 18}" text-anchor="${anchor}" font-size="10" fill="#566575">${key.slice(5)}</text>`;
+      }).join('');
+
+      const areaPath = `${d} L ${points[points.length - 1].x.toFixed(2)} ${(h - p.b).toFixed(2)} L ${points[0].x.toFixed(2)} ${(h - p.b).toFixed(2)} Z`;
+      const gradId = `${svgId}-grad`;
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${color}" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="${color}" stop-opacity="0.03"/>
+          </linearGradient>
+        </defs>
+        ${grid}
+        <line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h - p.b}" stroke="#bcc5d3" stroke-width="1"/>
+        <line x1="${p.l}" y1="${h - p.b}" x2="${w - p.r}" y2="${h - p.b}" stroke="#bcc5d3" stroke-width="1"/>
+        <text x="8" y="${(h / 2)}" text-anchor="middle" font-size="9" fill="#647385" transform="rotate(-90 8 ${h / 2})">${yLabel}</text>
+        <text x="${p.l + (iw / 2)}" y="${h - 4}" text-anchor="middle" font-size="9" fill="#647385">${xLabel}</text>
+        <path d="${areaPath}" fill="url(#${gradId})" />
+        <path d="${d}" fill="none" stroke="${color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+        ${dots}
+        ${endLabels}
+        <line id="${svgId}-hover-line" x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${h - p.b}" stroke="#7f8aa0" stroke-dasharray="3 3" stroke-width="1" opacity="0"></line>
+        <circle id="${svgId}-hover-dot" cx="${p.l}" cy="${h - p.b}" r="4" fill="${color}" stroke="#fff" stroke-width="1.5" opacity="0"></circle>
+        <rect id="${svgId}-hover-capture" x="${p.l}" y="${p.t}" width="${iw}" height="${ih}" fill="transparent"></rect>
+        <rect id="${svgId}-hover-bg" x="${p.l + 4}" y="${p.t + 2}" width="124" height="16" rx="8" ry="8" fill="#ffffff" stroke="#dde4ef" opacity="0"></rect>
+        <text id="${svgId}-hover-label" x="${p.l + 10}" y="${p.t + 13}" font-size="10" fill="#2b3648" opacity="0"></text>
+      `;
+
+      const hoverLine = document.getElementById(`${svgId}-hover-line`);
+      const hoverDot = document.getElementById(`${svgId}-hover-dot`);
+      const hoverLabel = document.getElementById(`${svgId}-hover-label`);
+      const hoverBg = document.getElementById(`${svgId}-hover-bg`);
+      const capture = document.getElementById(`${svgId}-hover-capture`);
+
+      function setHover(idx) {
+        const pt = points[idx];
+        hoverLine.setAttribute('x1', pt.x);
+        hoverLine.setAttribute('x2', pt.x);
+        hoverDot.setAttribute('cx', pt.x);
+        hoverDot.setAttribute('cy', pt.y);
+        const labelX = Math.min(Math.max(pt.x + 6, p.l + 4), w - p.r - 120);
+        hoverLabel.setAttribute('x', labelX + 6);
+        hoverLabel.setAttribute('y', p.t + 12);
+        hoverBg.setAttribute('x', labelX);
+        hoverBg.setAttribute('y', p.t + 2);
+        hoverLabel.textContent = `${labels[idx].slice(5)} • ${formatValue(pt.v)}`;
+        hoverLine.setAttribute('opacity', '1');
+        hoverDot.setAttribute('opacity', '1');
+        hoverBg.setAttribute('opacity', '0.96');
+        hoverLabel.setAttribute('opacity', '1');
+      }
+
+      capture.addEventListener('mousemove', (e) => {
+        const rect = svg.getBoundingClientRect();
+        const mx = ((e.clientX - rect.left) / rect.width) * w;
+        let nearest = 0;
+        let best = Infinity;
+        points.forEach((pt, i) => {
+          const d = Math.abs(pt.x - mx);
+          if (d < best) { best = d; nearest = i; }
+        });
+        setHover(nearest);
+      });
+
+      capture.addEventListener('mouseleave', () => {
+        hoverLine.setAttribute('opacity', '0');
+        hoverDot.setAttribute('opacity', '0');
+        hoverBg.setAttribute('opacity', '0');
+        hoverLabel.setAttribute('opacity', '0');
+      });
+    }
+
+    function selectedValues(name) {
+      return new Set([...document.querySelectorAll(`input[name="${name}"]:checked`)].map(el => el.value));
+    }
+
+    function escapeHtmlAttr(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('"', '&quot;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    }
+
+    function metricKicker(label, help) {
+      if (!help) return label;
+      const safeHelp = escapeHtmlAttr(help);
+      return `<span class="kicker-line">${label}<span class="metric-info"><button class="metric-info-btn" type="button" aria-label="${safeHelp}" data-help="${safeHelp}">i</button><span class="metric-tip" role="tooltip">${safeHelp}</span></span></span>`;
+    }
+
+    function renderFilters() {
+      document.getElementById('typeFilters').innerHTML = Object.keys(typeMeta).map(key => `
+        <label class="check-chip">
+          <input type="checkbox" name="typeFilter" value="${key}" checked />
+          ${typeMeta[key].label}
+        </label>
+      `).join('');
+
+      document.getElementById('surfaceFilters').innerHTML = Object.keys(surfaceMeta).map(key => `
+        <label class="check-chip">
+          <input type="checkbox" name="surfaceFilter" value="${key}" checked />
+          ${surfaceMeta[key].label}
+        </label>
+      `).join('');
+    }
+
+    function renderDashboard(filtered, consistencySessions, rangeStart, rangeEnd, includeCancelled, types, surfaces, goals, heatmapType) {
+      const fmtPct = (v) => `${Number(v).toFixed(1)}%`;
+      const fmtPp = (v) => `${v >= 0 ? '+' : ''}${Number(v).toFixed(1)}pp`;
+      const typeHours = seedKeys(typeMeta);
+      const typeCounts = seedKeys(typeMeta);
+      const surfaceHours = seedKeys(surfaceMeta);
+      const surfaceCounts = seedKeys(surfaceMeta);
+
+      filtered.forEach(s => {
+        typeHours[s.rawType] += s.hours;
+        typeCounts[s.rawType] += 1;
+        surfaceHours[s.surface] += s.hours;
+        surfaceCounts[s.surface] += 1;
+      });
+
+      const totalHours = filtered.reduce((sum, s) => sum + s.hours, 0);
+      const uniqueDays = new Set(filtered.map(s => s.dateKey)).size;
+      const rangeDays = Math.max(1, Math.floor((new Date(`${rangeEnd}T00:00:00`) - new Date(`${rangeStart}T00:00:00`)) / 86400000) + 1);
+      const playDayRatio = uniqueDays / rangeDays;
+      const avgHoursPerPlayDay = uniqueDays ? totalHours / uniqueDays : 0;
+      const sessionsPerPlayDay = uniqueDays ? filtered.length / uniqueDays : 0;
+      const avgHoursPerSession = filtered.length ? totalHours / filtered.length : 0;
+      const clayPct = totalHours ? (surfaceHours.clay / totalHours) * 100 : 0;
+      const hardPct = totalHours ? (surfaceHours.hard / totalHours) * 100 : 0;
+
+      const summary = [
+        { k: 'Sessions Shown', v: filtered.length, h: 'Sessions after current filters.' },
+        { k: 'Active Days', v: uniqueDays, h: 'Days with at least one session.' },
+        { k: 'Total Session Hours', v: totalHours.toFixed(1), h: 'Total training time in hours.' },
+        { k: 'Avg Hours / Session', v: avgHoursPerSession.toFixed(2), h: 'Average duration per session.' },
+        { k: 'Day Of Year', v: dayOfYear, h: 'Today index in the year.' },
+        { k: 'Days In Filter', v: rangeDays, h: 'Total days in selected date range.' },
+        { k: 'Days Played Ratio', v: `${(playDayRatio * 100).toFixed(1)}%`, h: 'Active Days divided by Days In Filter.' },
+        { k: 'Avg Hours / Play Day', v: avgHoursPerPlayDay.toFixed(2), h: 'Average hours on days played.' },
+        { k: 'Sessions / Play Day', v: sessionsPerPlayDay.toFixed(2), h: 'Average sessions on days played.' },
+        { k: 'Clay vs Hard Hours', v: `${clayPct.toFixed(1)}% / ${hardPct.toFixed(1)}%`, h: 'Hour split by surface: clay vs hard.' }
+      ];
+
+      document.getElementById('summary').innerHTML = summary.map(i => `
+        <article class="card"><p class="kicker">${metricKicker(i.k, i.h)}</p><p class="big">${i.v}</p></article>
+      `).join('');
+
+      renderBars('typeBars', typeHours, typeCounts, typeMeta);
+      renderBars('surfaceBars', surfaceHours, surfaceCounts, surfaceMeta);
+
+      const weekly = new Map();
+      filtered.forEach(s => {
+        const wk = toDateKey(startOfWeekMonday(s.startObj));
+        if (!weekly.has(wk)) weekly.set(wk, {
+          sessions: 0,
+          hours: 0,
+          clayHours: 0,
+          typeCounts: { private: 0, squad: 0, dad: 0 }
+        });
+        const agg = weekly.get(wk);
+        agg.sessions += 1;
+        agg.hours += s.hours;
+        if (s.surface === 'clay') agg.clayHours += s.hours;
+        if (agg.typeCounts[s.rawType] != null) agg.typeCounts[s.rawType] += 1;
+      });
+
+      const consistencyWeekly = new Map();
+      consistencySessions.forEach(s => {
+        const wk = toDateKey(startOfWeekMonday(s.startObj));
+        if (!consistencyWeekly.has(wk)) consistencyWeekly.set(wk, { sessions: 0 });
+        consistencyWeekly.get(wk).sessions += 1;
+      });
+
+      const weekKeys = [...weekly.keys()].sort();
+      const weeklySessions = weekKeys.map(k => weekly.get(k).sessions);
+      const weeklyHours = weekKeys.map(k => Number(weekly.get(k).hours.toFixed(2)));
+      const weeklyClayPct = weekKeys.map(k => {
+        const w = weekly.get(k);
+        return w.hours ? Number(((w.clayHours / w.hours) * 100).toFixed(1)) : 0;
+      });
+
+      function avg(values) {
+        return values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
+      }
+
+      function share(part, total) {
+        return total ? (part / total) * 100 : 0;
+      }
+
+      const splitIndex = Math.max(1, Math.ceil(weekKeys.length / 2));
+      const earlyKeys = weekKeys.slice(0, splitIndex);
+      const lateKeys = weekKeys.slice(splitIndex);
+      const effectiveLateKeys = lateKeys.length ? lateKeys : earlyKeys;
+
+      function periodStats(keys) {
+        const clayShares = [];
+        const privateCounts = [];
+        const squadCounts = [];
+        const dadCounts = [];
+
+        keys.forEach(k => {
+          const w = weekly.get(k);
+          clayShares.push(w.hours ? (w.clayHours / w.hours) * 100 : 0);
+          privateCounts.push(w.typeCounts.private || 0);
+          squadCounts.push(w.typeCounts.squad || 0);
+          dadCounts.push(w.typeCounts.dad || 0);
+        });
+
+        const privateTotal = privateCounts.reduce((a, b) => a + b, 0);
+        const squadTotal = squadCounts.reduce((a, b) => a + b, 0);
+        const dadTotal = dadCounts.reduce((a, b) => a + b, 0);
+        const trainTotal = privateTotal + squadTotal + dadTotal;
+
+        return {
+          clayShare: avg(clayShares),
+          hardShare: 100 - avg(clayShares),
+          privateShare: share(privateTotal, trainTotal),
+          squadShare: share(squadTotal, trainTotal),
+          dadShare: share(dadTotal, trainTotal)
+        };
+      }
+
+      const early = periodStats(earlyKeys);
+      const late = periodStats(effectiveLateKeys);
+
+      const qualityKpis = [
+        {
+          k: 'Clay Share Trend',
+          v: `${fmtPct(early.clayShare)} → ${fmtPct(late.clayShare)}`,
+          sub: `Drift ${fmtPp(late.clayShare - early.clayShare)}`,
+          h: 'Clay share change: early vs recent weeks.'
+        },
+        {
+          k: 'Hard Share Trend',
+          v: `${fmtPct(early.hardShare)} → ${fmtPct(late.hardShare)}`,
+          sub: `Drift ${fmtPp(late.hardShare - early.hardShare)}`,
+          h: 'Hard share change: early vs recent weeks.'
+        },
+        {
+          k: 'Private Mix Drift',
+          v: `${fmtPct(early.privateShare)} → ${fmtPct(late.privateShare)}`,
+          sub: `Drift ${fmtPp(late.privateShare - early.privateShare)}`,
+          h: 'Private session mix change over time.'
+        },
+        {
+          k: 'Squad Mix Drift',
+          v: `${fmtPct(early.squadShare)} → ${fmtPct(late.squadShare)}`,
+          sub: `Drift ${fmtPp(late.squadShare - early.squadShare)}`,
+          h: 'Squad session mix change over time.'
+        },
+        {
+          k: 'Dad Mix Drift',
+          v: `${fmtPct(early.dadShare)} → ${fmtPct(late.dadShare)}`,
+          sub: `Drift ${fmtPp(late.dadShare - early.dadShare)}`,
+          h: 'Dad-coached mix change over time.'
+        }
+      ];
+
+      document.getElementById('qualityKpis').innerHTML = qualityKpis.map(i => `
+        <article class="card">
+          <p class="kicker">${metricKicker(i.k, i.h)}</p>
+          <p class="big">${i.v}</p>
+          <p class="kpi-sub">${i.sub}</p>
+        </article>
+      `).join('');
+      document.getElementById('qualityKpiNote').textContent = `Trend windows: early ${earlyKeys.length} week(s) vs recent ${effectiveLateKeys.length} week(s), based on filtered data.`;
+
+      const uniqueDates = [...new Set(consistencySessions.map(s => s.dateKey))].sort();
+      let longestStreak = 0;
+      let currentStreak = 0;
+      let lastDate = null;
+      uniqueDates.forEach(dateKey => {
+        const date = new Date(`${dateKey}T00:00:00`);
+        if (!lastDate) {
+          currentStreak = 1;
+        } else {
+          const diffDays = Math.round((date - lastDate) / 86400000);
+          currentStreak = diffDays === 1 ? currentStreak + 1 : 1;
+        }
+        if (currentStreak > longestStreak) longestStreak = currentStreak;
+        lastDate = date;
+      });
+
+      const TARGET_PER_WEEK = goals.weeklySessions;
+      const CLAY_TARGET_PCT = goals.clayPct;
+      const HIT_RATE_TARGET = goals.hitRatePct;
+      const consistencyWeekKeys = [...consistencyWeekly.keys()].sort();
+      const weeklyTargetRows = consistencyWeekKeys.map(k => ({
+        key: k,
+        sessions: consistencyWeekly.get(k).sessions
+      }));
+      const metTargetWeeks = weeklyTargetRows.filter(w => w.sessions >= TARGET_PER_WEEK).length;
+      const missedTargetWeeks = weeklyTargetRows.filter(w => w.sessions < TARGET_PER_WEEK);
+      const totalTargetSessions = consistencyWeekKeys.length * TARGET_PER_WEEK;
+      const totalActualSessions = weeklyTargetRows.reduce((sum, w) => sum + w.sessions, 0);
+      const hitRate = consistencyWeekKeys.length ? (metTargetWeeks / consistencyWeekKeys.length) * 100 : 0;
+      const missedPreview = missedTargetWeeks.slice(0, 4).map(w => `${w.key.slice(5)} (${w.sessions}/${TARGET_PER_WEEK})`).join(', ');
+      const clayTargetDelta = clayPct - CLAY_TARGET_PCT;
+      const clayAdviceSymbol = clayTargetDelta >= 0 ? '↗' : '⚑';
+      const clayAdviceText = clayTargetDelta >= 0 ? 'Maintain clay exposure' : 'Increase clay sessions';
+      const streakAdviceSymbol = longestStreak >= 5 ? '↗' : '⚑';
+      const streakAdviceText = longestStreak >= 5 ? 'Solid routine' : 'Build consecutive-day momentum';
+      const weeklyTargetAdviceSymbol = hitRate >= HIT_RATE_TARGET ? '↗' : '⚑';
+      const weeklyTargetAdviceText = hitRate >= HIT_RATE_TARGET ? 'Maintain weekly consistency' : 'Lift weekly load to hit target';
+      const missedWeeksAdviceSymbol = missedTargetWeeks.length <= 1 ? '↗' : '⚑';
+      const missedWeeksAdviceText = missedTargetWeeks.length <= 1 ? 'Missed weeks controlled' : 'Reduce missed weeks with planned blocks';
+      const targetGap = totalActualSessions - totalTargetSessions;
+      const volumeAdviceSymbol = targetGap >= 0 ? '↗' : '⚑';
+      const volumeAdviceText = targetGap >= 0 ? 'On track vs target' : 'Add more sessions per week';
+
+      const consistencyCards = [
+        {
+          k: 'Longest Training Streak',
+          v: `${longestStreak} day${longestStreak === 1 ? '' : 's'} ${streakAdviceSymbol}`,
+          sub: `${streakAdviceText} • Consecutive days with at least one session.`,
+          h: 'Longest consecutive-days training streak.'
+        },
+        {
+          k: 'Weekly Target Hit Rate',
+          v: `${fmtPct(hitRate)} ${weeklyTargetAdviceSymbol}`,
+          sub: `${weeklyTargetAdviceText} • ${metTargetWeeks}/${consistencyWeekKeys.length || 0} weeks at ${TARGET_PER_WEEK}+ sessions.`,
+          h: 'Weeks meeting the session target.'
+        },
+        {
+          k: 'Missed-Week Alerts',
+          v: `${missedTargetWeeks.length} week${missedTargetWeeks.length === 1 ? '' : 's'} ${missedWeeksAdviceSymbol}`,
+          sub: `${missedWeeksAdviceText} • ${missedPreview || 'No missed weeks.'}`,
+          h: 'Weeks below the session target.'
+        },
+        {
+          k: 'Target vs Actual Sessions',
+          v: `${totalActualSessions} / ${totalTargetSessions} ${volumeAdviceSymbol}`,
+          sub: `${volumeAdviceText} • ${targetGap >= 0 ? '+' : ''}${targetGap} vs target baseline.`,
+          h: 'Actual sessions versus target baseline.'
+        },
+        {
+          k: `Clay Target (${CLAY_TARGET_PCT}%)`,
+          v: `${fmtPct(clayPct)} ${clayAdviceSymbol}`,
+          sub: `${clayAdviceText} • ${clayTargetDelta >= 0 ? '+' : ''}${clayTargetDelta.toFixed(1)}pp vs target ${CLAY_TARGET_PCT}%.`,
+          h: 'Current clay share versus target.'
+        }
+      ];
+
+      document.getElementById('consistencyKpis').innerHTML = consistencyCards.map(i => `
+        <article class="card">
+          <p class="kicker">${metricKicker(i.k, i.h)}</p>
+          <p class="big">${i.v}</p>
+          <p class="kpi-sub">${i.sub}</p>
+        </article>
+      `).join('');
+      document.getElementById('consistencyNote').textContent =
+        `Targets: minimum ${TARGET_PER_WEEK} sessions per week (including competitions), minimum ${CLAY_TARGET_PCT}% clay share, and ${HIT_RATE_TARGET}% weekly hit-rate.`;
+
+      const FORECAST_WEEKS = 4;
+      const recentWeekRows = weeklyTargetRows.slice(-FORECAST_WEEKS);
+      const recentSessionAvg = recentWeekRows.length
+        ? recentWeekRows.reduce((sum, w) => sum + w.sessions, 0) / recentWeekRows.length
+        : 0;
+      const forecastSessionTotal = recentSessionAvg * FORECAST_WEEKS;
+      const forecastSessionGap = forecastSessionTotal - (TARGET_PER_WEEK * FORECAST_WEEKS);
+      const sessionsNeededPerWeek = Math.max(0, TARGET_PER_WEEK - recentSessionAvg);
+
+      const recentClayAvg = weekKeys.length
+        ? avg(weekKeys.slice(-FORECAST_WEEKS).map(k => {
+            const w = weekly.get(k);
+            return w.hours ? (w.clayHours / w.hours) * 100 : 0;
+          }))
+        : clayPct;
+      const forecastClayGap = recentClayAvg - CLAY_TARGET_PCT;
+
+      const forecastCards = [
+        {
+          k: '4-Week Session Forecast',
+          v: `${forecastSessionTotal.toFixed(1)}`,
+          sub: `Recent pace: ${recentSessionAvg.toFixed(2)} sessions/week`,
+          h: 'Projected sessions for next 4 weeks.'
+        },
+        {
+          k: 'Target Baseline (4 Weeks)',
+          v: `${(TARGET_PER_WEEK * FORECAST_WEEKS).toFixed(1)}`,
+          sub: `${forecastSessionGap >= 0 ? '+' : ''}${forecastSessionGap.toFixed(1)} vs forecast`,
+          h: '4-week session target baseline.'
+        },
+        {
+          k: 'Forecast Clay Share',
+          v: `${fmtPct(recentClayAvg)}`,
+          sub: `${forecastClayGap >= 0 ? '+' : ''}${forecastClayGap.toFixed(1)}pp vs ${CLAY_TARGET_PCT}% target`,
+          h: 'Forecast clay share versus target.'
+        }
+      ];
+
+      const quantitativeRows = [
+        {
+          metric: 'Weekly Sessions (Execution)',
+          current: `${(consistencyWeekKeys.length ? totalActualSessions / consistencyWeekKeys.length : 0).toFixed(2)}/wk`,
+          target: `${TARGET_PER_WEEK.toFixed(2)}/wk`,
+          forecast: `${recentSessionAvg.toFixed(2)}/wk`,
+          gap: `${(recentSessionAvg - TARGET_PER_WEEK) >= 0 ? '+' : ''}${(recentSessionAvg - TARGET_PER_WEEK).toFixed(2)}/wk`
+        },
+        {
+          metric: 'Clay Share (Surface Goal)',
+          current: fmtPct(clayPct),
+          target: `${CLAY_TARGET_PCT}%`,
+          forecast: fmtPct(recentClayAvg),
+          gap: `${forecastClayGap >= 0 ? '+' : ''}${forecastClayGap.toFixed(1)}pp`
+        },
+        {
+          metric: 'Hit-Rate (Target Weeks)',
+          current: fmtPct(hitRate),
+          target: `${HIT_RATE_TARGET.toFixed(1)}%`,
+          forecast: fmtPct(hitRate),
+          gap: `${(hitRate - HIT_RATE_TARGET) >= 0 ? '+' : ''}${(hitRate - HIT_RATE_TARGET).toFixed(1)}pp`
+        }
+      ];
+
+      const qualitative = [];
+      const addSessions = Math.max(0, Math.ceil(sessionsNeededPerWeek));
+      const recentHoursAvg = weekKeys.length
+        ? avg(weekKeys.slice(-FORECAST_WEEKS).map(k => weekly.get(k).hours))
+        : 0;
+      const requiredClayHoursPerWeek = Math.max(0, ((CLAY_TARGET_PCT / 100) * recentHoursAvg) - ((recentClayAvg / 100) * recentHoursAvg));
+      const claySessionsPerWeek = avgHoursPerSession ? Math.ceil(requiredClayHoursPerWeek / avgHoursPerSession) : 0;
+
+      if (addSessions > 0) {
+        qualitative.push(`⚑ Action: schedule ${addSessions} extra session${addSessions === 1 ? '' : 's'} each week to reach ${TARGET_PER_WEEK}/week (book by Sunday night for Mon-Wed slots).`);
+      } else {
+        qualitative.push(`↗ Action: keep current weekly volume; lock next week’s ${TARGET_PER_WEEK}-session plan by Sunday night.`);
+      }
+
+      if (forecastClayGap < 0) {
+        qualitative.push(`⚑ Action: convert at least ${Math.max(1, claySessionsPerWeek)} session${Math.max(1, claySessionsPerWeek) === 1 ? '' : 's'} per week to clay until clay share reaches ${CLAY_TARGET_PCT}%.`);
+      } else {
+        qualitative.push('↗ Action: keep at least 1 clay-focused session each week to hold clay share above target.');
+      }
+
+      if (missedTargetWeeks.length > 0) {
+        qualitative.push('⚑ Action: place one backup session on Thursday/Friday each week to protect against missed-week risk.');
+      } else {
+        qualitative.push('↗ Action: keep current cadence and run a Friday check to confirm all weekly targets are met.');
+      }
+
+      document.getElementById('forecastCards').innerHTML = forecastCards.map(i => `
+        <article class="card">
+          <p class="kicker">${metricKicker(i.k, i.h)}</p>
+          <p class="big">${i.v}</p>
+          <p class="kpi-sub">${i.sub}</p>
+        </article>
+      `).join('');
+      document.getElementById('forecastRows').innerHTML = quantitativeRows.map(r => `
+        <tr>
+          <td>${r.metric}</td>
+          <td>${r.current}</td>
+          <td>${r.target}</td>
+          <td>${r.forecast}</td>
+          <td>${r.gap}</td>
+        </tr>
+      `).join('');
+      document.getElementById('qualitativeList').innerHTML = qualitative.map(text => `
+        <div class="row"><div class="head"><span>${text}</span></div></div>
+      `).join('');
+      document.getElementById('forecastNote').textContent =
+        `Forecast horizon: next ${FORECAST_WEEKS} weeks. Follow actions weekly, then review on Friday and adjust next week’s bookings.`;
+
+      drawLineChart('sessionsTrend', weeklySessions, weekKeys, '#1f8a8a', {
+        yLabel: 'Sessions',
+        xLabel: 'Week',
+        formatValue: (v) => Number(v).toFixed(0)
+      });
+      drawLineChart('hoursTrend', weeklyHours, weekKeys, '#3558e6', {
+        yLabel: 'Hours',
+        xLabel: 'Week',
+        formatValue: (v) => Number(v).toFixed(1)
+      });
+      drawLineChart('clayTrend', weeklyClayPct, weekKeys, '#c86a2f', {
+        yLabel: 'Clay %',
+        xLabel: 'Week',
+        maxOverride: 100,
+        formatValue: (v) => `${Number(v).toFixed(1)}%`
+      });
+
+      function renderWeekdayHeatmap(sessionsForHeatmap) {
+        const dayOrder = [1, 2, 3, 4, 5, 6, 0];
+        const dayLabel = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+        const timeBuckets = [
+          { key: '06-09', label: '06-09', min: 6, max: 9 },
+          { key: '09-12', label: '09-12', min: 9, max: 12 },
+          { key: '12-15', label: '12-15', min: 12, max: 15 },
+          { key: '15-18', label: '15-18', min: 15, max: 18 },
+          { key: '18-21', label: '18-21', min: 18, max: 21 },
+          { key: '21-24', label: '21-24', min: 21, max: 24 }
+        ];
+        const agg = {};
+        dayOrder.forEach(d => {
+          agg[d] = {};
+          timeBuckets.forEach(b => { agg[d][b.key] = { count: 0, hours: 0 }; });
+        });
+
+        sessionsForHeatmap.forEach(s => {
+          const day = s.startObj.getDay();
+          const hr = s.startObj.getHours();
+          const bucket = timeBuckets.find(b => hr >= b.min && hr < b.max);
+          if (!bucket) return;
+          agg[day][bucket.key].count += 1;
+          agg[day][bucket.key].hours += s.hours;
+        });
+
+        const maxCount = Math.max(
+          ...dayOrder.flatMap(d => timeBuckets.map(b => agg[d][b.key].count)),
+          0
+        );
+        const container = document.getElementById('weekdayHeatmap');
+        let html = '<div></div>';
+        html += timeBuckets.map(b => `<div class="heatmap-head">${b.label}</div>`).join('');
+        dayOrder.forEach(d => {
+          html += `<div class="heatmap-day">${dayLabel[d]}</div>`;
+          timeBuckets.forEach(b => {
+            const cell = agg[d][b.key];
+            const intensity = maxCount ? (cell.count / maxCount) : 0;
+            const bg = `rgba(53, 88, 230, ${0.08 + (0.62 * intensity)})`;
+            html += `<div class="heatmap-cell" style="background:${bg}" title="${dayLabel[d]} ${b.label}: ${cell.count} sessions, ${cell.hours.toFixed(1)} hours">${cell.count || ''}</div>`;
+          });
+        });
+        container.innerHTML = html;
+      }
+      const heatmapSessions = heatmapType === 'all'
+        ? filtered
+        : filtered.filter(s => s.rawType === heatmapType);
+      const heatmapTypeLabel = heatmapType === 'all' ? 'all session types' : typeMeta[heatmapType].label;
+      renderWeekdayHeatmap(heatmapSessions);
+      document.getElementById('heatmapWindowNote').textContent =
+        `Session density by weekday and hour blocks (${heatmapTypeLabel}, ${rangeStart} → ${rangeEnd}).`;
+
+      function monthKey(dateObj) {
+        return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+      }
+
+      function quarterKey(dateObj) {
+        const q = Math.floor(dateObj.getMonth() / 3) + 1;
+        return `${dateObj.getFullYear()}-Q${q}`;
+      }
+
+      function deltaClass(v) {
+        if (v > 0) return 'delta-pos';
+        if (v < 0) return 'delta-neg';
+        return 'delta-flat';
+      }
+
+      function fmtDelta(v, digits = 0) {
+        const sign = v > 0 ? '+' : '';
+        return `${sign}${Number(v).toFixed(digits)}`;
+      }
+
+      function buildSummaryRows(groupByFn) {
+        const grouped = new Map();
+        filtered.forEach(s => {
+          const key = groupByFn(s.startObj);
+          if (!grouped.has(key)) grouped.set(key, { sessions: 0, hours: 0 });
+          const g = grouped.get(key);
+          g.sessions += 1;
+          g.hours += s.hours;
+        });
+
+        const keys = [...grouped.keys()].sort();
+        const rows = keys.map((key, idx) => {
+          const cur = grouped.get(key);
+          const prev = idx > 0 ? grouped.get(keys[idx - 1]) : null;
+          const deltaSessions = prev ? (cur.sessions - prev.sessions) : 0;
+          const deltaHours = prev ? (cur.hours - prev.hours) : 0;
+          return `
+            <tr>
+              <td>${key}</td>
+              <td>${cur.sessions}</td>
+              <td>${cur.hours.toFixed(1)}</td>
+              <td class="${deltaClass(deltaSessions)}">${idx === 0 ? '—' : fmtDelta(deltaSessions, 0)}</td>
+              <td class="${deltaClass(deltaHours)}">${idx === 0 ? '—' : fmtDelta(deltaHours, 1)}</td>
+            </tr>
+          `;
+        });
+
+        if (!rows.length) {
+          return '<tr><td colspan="5">No periods in current filter.</td></tr>';
+        }
+        return rows.join('');
+      }
+
+      document.getElementById('monthlyRows').innerHTML = buildSummaryRows(monthKey);
+      document.getElementById('quarterlyRows').innerHTML = buildSummaryRows(quarterKey);
+
+      const rows = filtered
+        .slice()
+        .sort((a, b) => a.startObj - b.startObj)
+        .map(s => {
+          const date = s.start.slice(0, 10);
+          const time = s.start.slice(11, 16);
+          return `
+            <tr class="${s.cancelled ? 'cancelled' : ''}">
+              <td>${date}</td>
+              <td>${time}</td>
+              <td>${s.hours.toFixed(1)}</td>
+              <td><span class="pill ${s.rawType}">${typeMeta[s.rawType].label}</span></td>
+              <td><span class="pill ${s.surface}">${surfaceMeta[s.surface].label}</span></td>
+              <td>${obfuscateSensitive(s.title)}${s.cancelled ? ' (cancelled)' : ''}</td>
+            </tr>
+          `;
+        });
+
+      document.getElementById('rows').innerHTML = rows.length
+        ? rows.join('')
+        : '<tr><td colspan="6">No sessions in this filter range.</td></tr>';
+
+      document.getElementById('filterSummary').textContent =
+        `${filtered.length} sessions shown from ${rangeStart} to ${rangeEnd}. Cancelled ${includeCancelled ? 'included' : 'excluded'}.`;
+      document.getElementById('filterState').textContent =
+        `${rangeStart} → ${rangeEnd} • ${types.size} type${types.size === 1 ? '' : 's'} • ${surfaces.size} surface${surfaces.size === 1 ? '' : 's'} • Cancelled ${includeCancelled ? 'on' : 'off'}`;
+
+      applyPublicPrivacyLayer();
+    }
+
+    function applyFilters() {
+      const rangeStart = document.getElementById('filterStart').value;
+      const rangeEnd = document.getElementById('filterEnd').value;
+      const includeCancelled = document.getElementById('filterCancelled').checked;
+      const types = selectedValues('typeFilter');
+      const surfaces = selectedValues('surfaceFilter');
+      const goals = {
+        weeklySessions: Number(document.getElementById('goalSessions').value),
+        clayPct: Number(document.getElementById('goalClay').value),
+        hitRatePct: Number(document.getElementById('goalHitRate').value)
+      };
+      const heatmapType = document.getElementById('heatmapTypeFilter').value;
+
+      document.getElementById('goalSessionsVal').textContent = String(goals.weeklySessions);
+      document.getElementById('goalClayVal').textContent = `${goals.clayPct}%`;
+      document.getElementById('goalHitRateVal').textContent = `${goals.hitRatePct}%`;
+
+      const filtered = allSessions.filter(s => {
+        if (!includeCancelled && s.cancelled) return false;
+        if (s.dateKey < rangeStart || s.dateKey > rangeEnd) return false;
+        if (!types.has(s.rawType)) return false;
+        if (!surfaces.has(s.surface)) return false;
+        return true;
+      });
+
+      const consistencySessions = allSessions.filter(s => {
+        if (!includeCancelled && s.cancelled) return false;
+        if (s.dateKey < rangeStart || s.dateKey > rangeEnd) return false;
+        if (!surfaces.has(s.surface)) return false;
+        return true;
+      });
+
+      renderDashboard(filtered, consistencySessions, rangeStart, rangeEnd, includeCancelled, types, surfaces, goals, heatmapType);
+
+      const nextSync = nextDailySyncTime(7, 0);
+      document.getElementById('freshnessBadge').innerHTML = `
+        <span>Last sync: ${formatShortDateTime(appLoadTime)}</span>
+        <span>Source window: ${rangeStart} → ${rangeEnd}</span>
+        <span>Next sync: ${formatShortDateTime(nextSync)}</span>
+      `;
+    }
+
+    const minDate = allSessions.reduce((min, s) => s.dateKey < min ? s.dateKey : min, allSessions[0].dateKey);
+    const maxDate = allSessions.reduce((max, s) => s.dateKey > max ? s.dateKey : max, allSessions[0].dateKey);
+
+    document.getElementById('filterStart').value = minDate;
+    document.getElementById('filterEnd').value = maxDate;
+    renderFilters();
+
+    document.querySelectorAll('#filterStart, #filterEnd, #filterCancelled').forEach(el => {
+      el.addEventListener('change', applyFilters);
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.matches('input[name="typeFilter"], input[name="surfaceFilter"]')) {
+        applyFilters();
+      }
+    });
+    document.querySelectorAll('#goalSessions, #goalClay, #goalHitRate').forEach(el => {
+      el.addEventListener('input', applyFilters);
+      el.addEventListener('change', applyFilters);
+    });
+    document.getElementById('heatmapTypeFilter').addEventListener('change', applyFilters);
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+        document.getElementById('tab-dashboard').classList.toggle('active', target === 'dashboard');
+        document.getElementById('tab-recommendations').classList.toggle('active', target === 'recommendations');
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      const infoWrap = e.target.closest('.metric-info');
+      document.querySelectorAll('.metric-info.open').forEach(el => {
+        if (el !== infoWrap) el.classList.remove('open');
+      });
+      if (infoWrap && e.target.closest('.metric-info-btn')) {
+        infoWrap.classList.toggle('open');
+      }
+    });
+
+    applyFilters();
+  </script>
+</body>
+</html>
