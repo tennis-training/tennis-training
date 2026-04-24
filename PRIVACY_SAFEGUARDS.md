@@ -6,6 +6,8 @@ Protect personal identifiers and secrets while keeping public GitHub Pages updat
 
 ## Implemented Controls
 
+- Local frontend (`index.html`) is the source of truth.
+- GitHub Actions (`.github/workflows/daily-dashboard-sync.yml`) is the always-on scheduler for public syncs.
 - Public workflow sets `PUBLIC_BUILD=1` in `.github/workflows/daily-dashboard-sync.yml`.
 - Sync script (`scripts/sync-calendar-to-index.mjs`) anonymizes session titles when `PUBLIC_BUILD=1`.
 - Public page title/header are neutral in `index.html`.
@@ -16,18 +18,18 @@ Protect personal identifiers and secrets while keeping public GitHub Pages updat
 Public-safe manual sync:
 
 ```bash
-PUBLIC_BUILD=1 node scripts/sync-calendar-to-index.mjs
+./scripts/sync-public-safe.sh
 ```
 
 Local/private sync (full-detail local use only):
 
 ```bash
-node scripts/sync-calendar-to-index.mjs
+./scripts/sync-local-full.sh
 ```
 
 ## Pre-Push Checklist
 
-1. Run public-safe sync command if data changed.
+1. Run public-safe sync command if you intend to publish.
 2. Confirm no personal names/club names in `index.html`:
 
 ```bash
@@ -43,6 +45,17 @@ rg -n "(GOCSPX-|ya29\\.|refresh_token\\s*[:=]\\s*['\\\"]|client_secret\\s*[:=]\\
 ```
 
 4. Push only after both checks are clean.
+
+Helper command:
+
+```bash
+./scripts/prepush-privacy-check.sh
+```
+
+## Push Behavior
+
+- The pre-push hook does not rewrite your local files.
+- It only runs privacy checks and blocks push when sensitive terms are detected.
 
 ## Incident Response
 

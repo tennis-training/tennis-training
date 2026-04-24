@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+echo "[pre-push] Local frontend remains source-of-truth."
+echo "[pre-push] Running privacy checks only (no local file mutation)..."
+./scripts/prepush-privacy-check.sh
