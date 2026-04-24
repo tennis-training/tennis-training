@@ -8,6 +8,7 @@ Protect personal identifiers and secrets while keeping public GitHub Pages updat
 
 - Local frontend (`index.html`) is the source of truth.
 - GitHub Actions (`.github/workflows/daily-dashboard-sync.yml`) is the always-on scheduler for public syncs.
+- GitHub Actions (`.github/workflows/monthly-google-token-health.yml`) runs a monthly OAuth token and calendar-access health check.
 - Public workflow sets `PUBLIC_BUILD=1` in `.github/workflows/daily-dashboard-sync.yml`.
 - Sync script (`scripts/sync-calendar-to-index.mjs`) anonymizes session titles when `PUBLIC_BUILD=1`.
 - Public page title/header are neutral in `index.html`.
