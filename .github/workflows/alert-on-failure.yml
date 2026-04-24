@@ -19,6 +19,14 @@ jobs:
     if: github.event.workflow_run.conclusion == 'failure'
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Create failure alert issue
         id: failure_meta
         uses: actions/github-script@v7
@@ -96,14 +104,4 @@ jobs:
           RUN_URL: ${{ steps.failure_meta.outputs.run_url }}
           FAILED_STAGE: ${{ steps.failure_meta.outputs.failed_stage }}
           FAILED_STEP: ${{ steps.failure_meta.outputs.failed_step }}
-        run: |
-          if [[ -z "${TWILIO_ACCOUNT_SID}" || -z "${TWILIO_AUTH_TOKEN}" || -z "${TWILIO_FROM_NUMBER}" || -z "${ALERT_TO_NUMBER}" ]]; then
-            echo "Twilio secrets missing; skipping SMS."
-            exit 0
-          fi
-          SMS_BODY="ALERT: DASHBOARD SYNC FAILED | Workflow: ${RUN_NAME} | Run: ${RUN_ID} | Stage: ${FAILED_STAGE} | Step: ${FAILED_STEP} | ${RUN_URL}"
-          curl -sS -X POST "https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json" \
-            --data-urlencode "To=${ALERT_TO_NUMBER}" \
-            --data-urlencode "From=${TWILIO_FROM_NUMBER}" \
-            --data-urlencode "Body=${SMS_BODY}" \
-            -u "${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}" >/dev/null
+        run: node scripts/twilio-alert.mjs
