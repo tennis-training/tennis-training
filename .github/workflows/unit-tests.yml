@@ -26,5 +26,6 @@ jobs:
           node-version: '20'
 
       - name: Run unit tests
-        run: node --test tests/metrics-parity.test.mjs tests/twilio-alert.test.mjs
-
+        run: |
+          node --test tests/metrics-parity.test.mjs tests/twilio-alert.test.mjs
+          node --check scripts/check-twilio-balance.mjs

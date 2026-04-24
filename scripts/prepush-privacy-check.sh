@@ -14,6 +14,7 @@ fi
 
 echo "Running unit tests..."
 node --test tests/metrics-parity.test.mjs tests/twilio-alert.test.mjs
+node --check scripts/check-twilio-balance.mjs
 
 echo "Running PII scan against committed HEAD:index.html..."
 tmp_index="$(mktemp)"

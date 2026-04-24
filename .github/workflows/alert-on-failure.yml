@@ -6,6 +6,7 @@ on:
     workflows:
       - Daily Tennis Dashboard Sync
       - Monthly Google Token Health Check
+      - Monthly Twilio Balance Check
     types:
       - completed
 

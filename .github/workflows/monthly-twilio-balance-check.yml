@@ -1,0 +1,81 @@
+name: Monthly Twilio Balance Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      min_balance:
+        description: 'Minimum required Twilio balance'
+        required: false
+        default: '1.0'
+      force_fail:
+        description: 'Set true to force a controlled failure test'
+        required: false
+        default: 'false'
+  schedule:
+    # Runs monthly on the 1st at 00:15 UTC
+    - cron: '15 0 1 * *'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: monthly-twilio-balance-check
+  cancel-in-progress: true
+
+jobs:
+  twilio-balance-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate Twilio balance threshold
+        run: node scripts/check-twilio-balance.mjs
+        env:
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_MIN_BALANCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.min_balance || '1.0' }}
+
+      - name: Force controlled failure (test mode)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_fail == 'true' }}
+        run: |
+          echo "Controlled failure test requested."
+          exit 1
+
+      - name: Create backup issue alert on failure
+        if: ${{ failure() }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runId = context.runId;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+
+            const title = `ALERT: Twilio balance check failed (run ${runId})`;
+            const body = [
+              'ALERT: TWILIO BALANCE CHECK FAILED',
+              '',
+              `- Workflow: Monthly Twilio Balance Check`,
+              `- Run ID: ${runId}`,
+              `- Run URL: ${runUrl}`,
+              '',
+              'Next step:',
+              '- Open run logs, review Twilio balance/credentials, and top up or fix configuration as needed.'
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body,
+              labels: ['automation-failure', 'high-priority', 'twilio-balance']
+            });
+
