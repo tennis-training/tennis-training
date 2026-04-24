@@ -153,7 +153,10 @@ function toSession(ev) {
   if (!rawType) return null;
 
   const cancelled = (ev.status || '').toLowerCase() === 'cancelled' || eventText(ev).includes('cancelled');
-  const title = PUBLIC_BUILD ? publicTitle(rawType, cancelled) : (ev.summary || 'Tennis session');
+  const surfaceHint = eventText(ev).includes('clay') ? 'clay' : 'hard';
+  const title = PUBLIC_BUILD
+    ? publicTitle(rawType, cancelled, surfaceHint)
+    : (ev.summary || 'Tennis session');
 
   return {
     start: ev.start.dateTime,
@@ -164,7 +167,7 @@ function toSession(ev) {
   };
 }
 
-function publicTitle(rawType, cancelled) {
+function publicTitle(rawType, cancelled, surfaceHint) {
   const base = {
     private: 'Private training session',
     squad: 'Squad training session',
@@ -173,7 +176,8 @@ function publicTitle(rawType, cancelled) {
     camp: 'Camp session'
   }[rawType] || 'Tennis session';
 
-  return cancelled ? `${base} (cancelled)` : base;
+  const withSurface = surfaceHint === 'clay' ? `${base} (clay)` : base;
+  return cancelled ? `${withSurface} (cancelled)` : withSurface;
 }
 
 function getClayOverrideDates(events) {
