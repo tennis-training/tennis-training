@@ -1,0 +1,78 @@
+name: Alert on Workflow Failure
+
+on:
+  workflow_run:
+    workflows:
+      - Daily Tennis Dashboard Sync
+      - Monthly Google Token Health Check
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  create-alert-issue:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create failure alert issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const jobsResp = await github.rest.actions.listJobsForWorkflowRun({
+              owner,
+              repo,
+              run_id: run.id,
+              per_page: 100
+            });
+
+            const jobs = jobsResp.data.jobs || [];
+            const failedJob = jobs.find(j => j.conclusion === 'failure') || null;
+            let failedStep = null;
+            if (failedJob?.steps?.length) {
+              failedStep = failedJob.steps.find(s => s.conclusion === 'failure') || null;
+            }
+
+            const stageMap = {
+              'Sync calendar to dashboard': 'calendar_fetch_or_transform_update',
+              'Detect changes': 'local_validation',
+              'Commit and push': 'git_commit_or_github_push',
+              'Validate Google token and calendar access': 'token_calendar_health'
+            };
+
+            const failedStage = failedStep?.name
+              ? (stageMap[failedStep.name] || failedStep.name)
+              : 'unknown';
+
+            const title = `ALERT: Workflow failed - ${run.name} (run ${run.id}, attempt ${run.run_attempt})`;
+            const body = [
+              'ALERT: DASHBOARD SYNC FAILED',
+              '',
+              `- Workflow: ${run.name}`,
+              `- Run ID: ${run.id}`,
+              `- Attempt: ${run.run_attempt}`,
+              `- Branch: ${run.head_branch}`,
+              `- SHA: ${run.head_sha}`,
+              `- FAILED_STAGE: ${failedStage}`,
+              `- Failed Job: ${failedJob?.name || 'unknown'}`,
+              `- Failed Step: ${failedStep?.name || 'unknown'}`,
+              `- Run URL: ${run.html_url}`,
+              '',
+              'Next step:',
+              '- Open the run logs and inspect the failed step output first, then rerun after fixing root cause.'
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body,
+              labels: ['automation-failure', 'high-priority']
+            });
